@@ -48,7 +48,8 @@ model Membership{
 model Service {
   id Int @id @default(autoincrement())
   name String
-  price Int 
+  price Int
+  description String? 
   isActive Boolean @default(true)
 
   orderItems  OrderItem[]
