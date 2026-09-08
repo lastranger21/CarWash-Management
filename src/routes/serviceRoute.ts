@@ -8,9 +8,9 @@ import { validate } from "../middlewares/validate";
 const router = Router()
 
 
-router.post("/",authentication,upload.single('image'),validate(createServiceSchema),createService)
-router.get("/",authentication, authorizeRole(["ADMIN"]), getAllService)
+router.post("/",authentication, authorizeRole(["ADMIN"]),upload.single('image'),validate(createServiceSchema),createService)
+router.get("/",authentication, getAllService)
 router.get("/:id",getServiceById)
-router.put("/:id",authentication,upload.single('image'),updateService)
-router.delete("/:id",deleteService)
+router.put("/:id",authentication, authorizeRole(["ADMIN"]),upload.single('image'),updateService)
+router.delete("/:id",authentication, authorizeRole(["ADMIN"]),deleteService)
 export default router;
