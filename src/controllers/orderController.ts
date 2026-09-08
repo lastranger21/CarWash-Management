@@ -127,3 +127,143 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
     next(error);
   }
 };
+
+
+export const getAllOrders = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { search, status, paymentStatus } = req.query;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const whereCondition: any = {};
+
+    if (status && status !== 'ALL') {
+      whereCondition.status = status;
+    }
+
+    if (paymentStatus && paymentStatus !== 'ALL') {
+      whereCondition.paymentStatus = paymentStatus;
+    }
+
+    if (search) {
+      whereCondition.OR = [
+        { vehiclePlate: { contains: String(search), mode: 'insensitive' } },
+        { customer: { name: { contains: String(search), mode: 'insensitive' } } },
+        { orderCode: { contains: String(search), mode: 'insensitive' } },
+      ];
+    }
+    
+    const [orders, totalData] = await Promise.all([
+      prisma.order.findMany({
+        where: whereCondition,
+        take: limit,
+        skip: skip,
+        orderBy: { createdAt: 'desc' }, // Order terbaru 
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              membership: {
+                select: { isActive: true, memberCode: true, discountPercent: true },
+              },
+            },
+          },
+          orderItems: {
+            include: {
+              service: { select: { id: true, name: true, price: true } },
+            },
+          },
+          payment: true, // join table methode payment
+        },
+      }),
+      prisma.order.count({ where: whereCondition }),
+    ]);
+    return res.status(200).json({
+      message: 'Berhasil mengambil daftar pesanan car wash',
+      meta: {
+        currentPage: page,
+        limit: limit,
+        totalData: totalData,
+        totalPage: Math.ceil(totalData / limit),
+      },
+      data: orders,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getOrderById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const order = await prisma.order.findUnique({
+      where: { id: Number(id) },
+      include: {
+        customer: {
+          include: {
+            membership: true,
+          },
+        },
+        orderItems: {
+          include: {
+            service: true,
+          },
+        },
+        createdByUser: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+          },
+        },
+        payment: {
+          include: {
+            receivedBy: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+        histories: {
+          include: {
+            changedBy: {
+              select: { id: true, name: true },
+            },
+          },
+          orderBy: { changedAt: 'asc' }, // Timeline alur dari awal sampai akhir
+        },
+      },
+    });
+    if (!order) {
+      return res.status(404).json({
+        message: `Pesanan dengan ID ${id} tidak ditemukan`,
+      });
+    }
+    return res.status(200).json({
+      message: 'Detail pesanan berhasil diambil',
+      data: order,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+export const deleteOrder = async (req:Request, res: Response) => {
+    try {
+        const {id} = req.params
+        await prisma.order.delete({
+            where: {
+                id: Number(id)
+            }
+        })
+        return res.status(200).json({
+            message: "order deleted successfully"
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to delete order",
+            error: error
+        })
+    }
+}

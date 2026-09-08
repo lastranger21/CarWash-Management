@@ -7,7 +7,7 @@ import { PrismaClientExtends } from '@prisma/client/extension';
 export const createCustomer = async (req:Request,res:Response,next:NextFunction) => {
     try {
         const {name, phone} = req.body
-        const id = (req as any).user.id
+        //const id = (req as any).user.id
         const newCustomer = await prisma.customer.create({
             data: {
                 name: name,
@@ -112,8 +112,8 @@ export const updateCustomer= async (req:Request,res:Response,next:NextFunction) 
 }
 export const toggleMembership = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params; // ID Customer dari URL params (/customers/:id/membership)
-    // 1. Cek keberadaan Customer beserta data membership-nya
+    const { id } = req.params; 
+    
     const customer = await prisma.customer.findUnique({
       where: { id: Number(id) },
       include: { membership: true },
