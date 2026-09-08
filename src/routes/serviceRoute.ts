@@ -11,6 +11,6 @@ const router = Router()
 router.post("/",authentication,upload.single('image'),validate(createServiceSchema),createService)
 router.get("/",authentication, authorizeRole(["ADMIN"]), getAllService)
 router.get("/:id",getServiceById)
-router.put("/:id",updateService)
+router.put("/:id",authentication,upload.single('image'),updateService)
 router.delete("/:id",deleteService)
 export default router;

@@ -51,7 +51,7 @@ model Service {
   price Int
   description String? 
   isActive Boolean @default(true)
-
+  image String? 
   orderItems  OrderItem[]
 }
 
@@ -61,7 +61,7 @@ model Order {
   customerId Int 
   vehiclePlate String 
   createdById Int
-  status OrderStatus @default(PENDING)
+  status OrderStatus @default(RECEIVED)
   paymentStatus PayStatus            @default(UNPAID)
   subtotal      Int              
   discount      Decimal              @db.Decimal(12, 2) @default(10.00)
@@ -115,8 +115,11 @@ enum Role {
   STAFF
 }
 enum OrderStatus {
-  PENDING
-  PROCESSING
+  RECEIVED
+  QUEUED
+  WASHING
+  DRYING
+  READY
   COMPLETED
   CANCELLED
 }

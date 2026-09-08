@@ -19,12 +19,12 @@ export const createService = async (req:Request,res:Response) => {
         })
 
         return res.status(201).json({
-            message: "Product Created!",
+            message: "Service Created!",
             data: newProduct
         })
     } catch (error) {
         return res.status(500).json({
-            message: "Failed to create product",
+            message: "Failed to create service",
             error: error
         })
     }
@@ -95,19 +95,21 @@ export const getServiceById = async(req:Request,res:Response,next:NextFunction) 
     }
 }
 
-export const updateService= async (req:Request,res:Response) => {
+export const updateService= async (req:Request,res:Response,next:NextFunction) => {
     try {
         const {id} = req.params
-        const {name,price,description} = req.body
-
+        const {name, price, description} = req.body
+        
+        const image = req.file ? req.file.filename : null
         const updatedService = await prisma.service.update({
             where: {
                 id:Number(id)
             },
             data: {
-                name,
+                name:name,
                 price:Number(price),
-                description
+                description:description,
+                image
             }
         })
         return res.status(200).json({
@@ -115,10 +117,7 @@ export const updateService= async (req:Request,res:Response) => {
             data: updatedService
         })
     } catch (error) {
-        return res.status(500).json({
-            message: "Failed to update service",
-            error: error
-        })
+        next(error)
     }
 }
 
