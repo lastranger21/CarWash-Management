@@ -1,121 +1,129 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
-
+import { Sidebar } from './components/dashboard/Sidebar'
+import { Header } from './components/dashboard/Header'
+import { StatCards } from './components/dashboard/StatCards'
+import { BayMonitor } from './components/dashboard/BayMonitor'
+import { RecentOrdersTable } from './components/dashboard/RecentOrdersTable'
+import { NewOrderModal } from './components/dashboard/NewOrderModal'
+import { INITIAL_ORDERS, INITIAL_SERVICES } from './data/mockData'
+import { type OrderRecord, type OrderStatus } from './types/carwash'
+import { CustomerPage } from './components/dashboard/Customer'
+import { ServicesPage } from './components/dashboard/Service'
+import { OrderHistoryPage } from './components/dashboard/HistoryOrder'
 function App() {
-  const [count, setCount] = useState(0)
+  const [orders, setOrders] = useState<OrderRecord[]>(INITIAL_ORDERS)
+  const [services,setServices] = useState(INITIAL_SERVICES)
+  const [activeTab, setActiveTab] = useState('dashboard')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleAddOrder = (newOrder: OrderRecord) => {
+    setOrders((prev) => [newOrder, ...prev])
+  }
+
+  const handleUpdateStatus = (orderId: number, nextStatus: OrderStatus) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id === orderId) {
+          return {
+            ...order,
+            status: nextStatus,
+          }
+        }
+        return order
+      })
+    )
+  }
+
+  const handleConfirmPayment = (
+    orderId: number,
+    paymentMethod: 'CASH' | 'QRIS' | 'DEBIT',
+    cashReceived?: number,
+    change?: number
+  ) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id === orderId) {
+          return {
+            ...order,
+            paymentStatus: 'PAID',
+            paymentMethod,
+            cashReceived,
+            change,
+          }
+        }
+        return order
+      })
+    )
+  }
+
+  const handleRefresh = () => {
+    setIsRefreshing(true)
+    setTimeout(() => {
+      setIsRefreshing(false)
+    }, 600)
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="flex min-h-screen bg-background font-sans text-foreground">
+      {/* Sidebar Navigation */}
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenNewOrder={() => setIsModalOpen(true)}
+      />
 
-      <div className="ticks"></div>
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col overflow-x-hidden">
+        <Header
+          onOpenNewOrder={() => setIsModalOpen(true)}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+        />
+        <main className="flex-1 space-y-6 p-4 md:p-6 lg:p-8 w-full">
+ {activeTab === 'dashboard' && (
+  <>
+        
+          {/* Top KPI Metrics */}
+          <StatCards orders={orders} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          {/* Live Bay & Wash Process Monitor */}
+          <BayMonitor orders={orders} onUpdateStatus={handleUpdateStatus} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+          {/* Bottom Grid: Recent Orders Table & Service Performance */}
+              <div className="w-full">
+                  <RecentOrdersTable
+                        orders={orders}
+                        onConfirmPayment={handleConfirmPayment}
+                        onUpdateStatus={handleUpdateStatus}
+                  />
+              </div>
+              </>
+)}
+
+{activeTab === 'bay' && (
+    <OrderHistoryPage orders={orders} />
+  )}
+{activeTab === 'services' && (
+    <ServicesPage services={services} setServices={setServices} />
+  )}
+
+            
+          {/* TAMPILAN HALAMAN PELANGGAN & MEMBER */}
+  {activeTab === 'customers' && (
+    <CustomerPage />
+  )}
+        </main>
+      </div>
+
+      {/* POS Modal for New Order */}
+      <NewOrderModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        services={services}
+        onAddOrder={handleAddOrder}
+      />
+    </div>
   )
 }
 
