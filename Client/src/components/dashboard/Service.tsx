@@ -1,17 +1,14 @@
 import { useState } from 'react'
 import {
-  Sparkles,
   Plus,
   Search,
+  BrushCleaning,
   Clock,
   Edit3,
   Trash2,
-  CheckCircle2,
-  XCircle,
   X,
   Tag,
   Layers,
-  Car,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -139,7 +136,7 @@ export function ServicesPage({ services, setServices }: ServicesPageProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Sparkles className="size-5 text-primary" />
+            <BrushCleaning className="size-5 text-primary" />
             Manajemen Paket & Layanan Cuci
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">

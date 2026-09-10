@@ -3,13 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { type OrderRecord, type OrderStatus } from '../../types/carwash'
+import { useOrder} from '@/hooks/useOrder'
 
-interface BayMonitorProps {
-  orders: OrderRecord[]
-  onUpdateStatus: (orderId: number, nextStatus: OrderStatus) => void
-}
 
-export function BayMonitor({ orders, onUpdateStatus }: BayMonitorProps) {
+export function BayMonitor() {
+  const { orders, updateOrderStatus } = useOrder()
   const activeBays = [
     { bayNumber: 1, name: 'Bay 1 (Cuci Hidrolik A)', type: 'WASHING' },
     { bayNumber: 2, name: 'Bay 2 (Cuci Salju B)', type: 'WASHING' },
@@ -152,7 +150,7 @@ export function BayMonitor({ orders, onUpdateStatus }: BayMonitorProps) {
                     <Button
                       size="sm"
                       className="w-full text-xs font-medium justify-between"
-                      onClick={() => onUpdateStatus(currentOrder.id, nextStatus)}
+                      onClick={() => updateOrderStatus(currentOrder.id, nextStatus)}
                     >
                       <span>Lanjut: {nextStatus}</span>
                       <ArrowRight className="size-3.5" />

@@ -1,9 +1,11 @@
+import { useAuth } from '@/hooks/useAuth'
 import {
   LayoutDashboard,
   CreditCard,
   Users,
-  Sparkles,
+
   ClipboardList,
+  BrushCleaning,
   LogOut,
   Car,
 } from 'lucide-react'
@@ -12,6 +14,7 @@ interface SidebarProps {
   activeTab: string
   setActiveTab: (tab: string) => void
   onOpenNewOrder: () => void
+  
 }
 
 export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder }: SidebarProps) {
@@ -19,10 +22,10 @@ export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder }: SidebarProp
     { id: 'dashboard', label: 'Dashboard Operasional', icon: LayoutDashboard },
     { id: 'pos', label: 'Kasir & POS', icon: CreditCard },
     { id: 'bay', label: 'Riwayat Transaksi', icon: ClipboardList },
-    { id: 'services', label: 'Paket & Layanan', icon: Sparkles },
+    { id: 'services', label: 'Paket & Layanan', icon: BrushCleaning },
     { id: 'customers', label: 'Pelanggan & Member', icon: Users },
   ]
-
+  const {logout} =useAuth()
   return (
     <aside className="hidden w-64 flex-col border-r border-border bg-card p-4 lg:flex justify-between shrink-0">
       <div>
@@ -89,7 +92,8 @@ export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder }: SidebarProp
           <button
             title="Keluar"
             className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
+          onClick={ logout}
+         >
             <LogOut className="size-4" />
           </button>
         </div>

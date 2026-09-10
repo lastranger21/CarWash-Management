@@ -8,8 +8,6 @@ import {
   Wind,
   Printer,
   CreditCard,
-  UserCheck,
-  AlertCircle,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -18,28 +16,15 @@ import { Input } from '../ui/input'
 import { type OrderRecord, type OrderStatus } from '../../types/carwash'
 import { PaymentModal } from './PaymentModal'
 import { ReceiptModal } from './ReceiptModal'
+import { useOrder } from '@/hooks/useOrder'
 
-interface RecentOrdersTableProps {
-  orders: OrderRecord[]
-  onConfirmPayment: (
-    orderId: number,
-    paymentMethod: 'CASH' | 'QRIS' | 'DEBIT',
-    cashReceived?: number,
-    change?: number
-  ) => void
-  onUpdateStatus: (orderId: number, nextStatus: OrderStatus) => void
-}
 
-export function RecentOrdersTable({
-  orders,
-  onConfirmPayment,
-  onUpdateStatus,
-}: RecentOrdersTableProps) {
+export function RecentOrdersTable() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'READY' | 'COMPLETED' | 'UNPAID'>('ALL')
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<OrderRecord | null>(null)
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<OrderRecord | null>(null)
-
+  const { orders, updateOrderStatus,confirmPayment } = useOrder()
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -274,7 +259,7 @@ export function RecentOrdersTable({
                           <Button
                             size="xs"
                             className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px]"
-                            onClick={() => onUpdateStatus(order.id, 'COMPLETED')}
+                            onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
                           >
                             Selesai & Keluar
                           </Button>
@@ -304,7 +289,7 @@ export function RecentOrdersTable({
         onClose={() => setSelectedOrderForPayment(null)}
         order={selectedOrderForPayment}
         onConfirmPayment={(orderId, method, cashReceived, change) => {
-          onConfirmPayment(orderId, method, cashReceived, change)
+          confirmPayment(orderId, method, cashReceived, change)
           const target = orders.find((o) => o.id === orderId)
           if (target) {
             setSelectedOrderForReceipt({

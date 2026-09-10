@@ -5,57 +5,50 @@ import { StatCards } from './components/dashboard/StatCards'
 import { BayMonitor } from './components/dashboard/BayMonitor'
 import { RecentOrdersTable } from './components/dashboard/RecentOrdersTable'
 import { NewOrderModal } from './components/dashboard/NewOrderModal'
-import { INITIAL_ORDERS, INITIAL_SERVICES } from './data/mockData'
-import { type OrderRecord, type OrderStatus } from './types/carwash'
+import { INITIAL_SERVICES } from './data/mockData'
 import { CustomerPage } from './components/dashboard/Customer'
 import { ServicesPage } from './components/dashboard/Service'
 import { OrderHistoryPage } from './components/dashboard/HistoryOrder'
+import { Login } from './components/auth/Login'
+import { Register } from './components/auth/Register'
+import { OrderProvider } from './context/orderProvider'
+import { useOrder } from './hooks/useOrder'
 function App() {
-  const [orders, setOrders] = useState<OrderRecord[]>(INITIAL_ORDERS)
-  const [services,setServices] = useState(INITIAL_SERVICES)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
+        {authMode === 'login' ? (
+          <Login
+            onLoginSuccess={() => setIsAuthenticated(true)}
+            onSwitchToRegister={() => setAuthMode('register')} 
+          />
+        ) : (
+          <Register
+            onRegisterSuccess={() => {
+              alert('Pendaftaran akun berhasil! Silakan login.')
+              setAuthMode('login') 
+            }}
+            onSwitchToLogin={() => setAuthMode('login')} // <-- Kembali ke Login
+          />
+        )}
+      </div>
+    )
+  }
+  return (
+    <OrderProvider>
+      <Dashboard />
+    </OrderProvider>
+  )
+}
+
+function Dashboard() {
+  const { orders, addOrder } = useOrder()
+  const [services, setServices] = useState(INITIAL_SERVICES)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-
-  const handleAddOrder = (newOrder: OrderRecord) => {
-    setOrders((prev) => [newOrder, ...prev])
-  }
-
-  const handleUpdateStatus = (orderId: number, nextStatus: OrderStatus) => {
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id === orderId) {
-          return {
-            ...order,
-            status: nextStatus,
-          }
-        }
-        return order
-      })
-    )
-  }
-
-  const handleConfirmPayment = (
-    orderId: number,
-    paymentMethod: 'CASH' | 'QRIS' | 'DEBIT',
-    cashReceived?: number,
-    change?: number
-  ) => {
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id === orderId) {
-          return {
-            ...order,
-            paymentStatus: 'PAID',
-            paymentMethod,
-            cashReceived,
-            change,
-          }
-        }
-        return order
-      })
-    )
-  }
 
   const handleRefresh = () => {
     setIsRefreshing(true)
@@ -71,6 +64,7 @@ function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenNewOrder={() => setIsModalOpen(true)}
+        onLogout={() => setIsAuthenticated(false)}
       />
 
       {/* Main Content Area */}
@@ -88,15 +82,11 @@ function App() {
           <StatCards orders={orders} />
 
           {/* Live Bay & Wash Process Monitor */}
-          <BayMonitor orders={orders} onUpdateStatus={handleUpdateStatus} />
+          <BayMonitor   />
 
           {/* Bottom Grid: Recent Orders Table & Service Performance */}
               <div className="w-full">
-                  <RecentOrdersTable
-                        orders={orders}
-                        onConfirmPayment={handleConfirmPayment}
-                        onUpdateStatus={handleUpdateStatus}
-                  />
+                  <RecentOrdersTable/>
               </div>
               </>
 )}
@@ -121,7 +111,7 @@ function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         services={services}
-        onAddOrder={handleAddOrder}
+        onAddOrder={addOrder}
       />
     </div>
   )

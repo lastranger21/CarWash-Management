@@ -104,7 +104,7 @@ export function NewOrderModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs p-4 sm:p-6 flex justify-center items-start">
     <div className="relative w-full max-w-2xl my-8">
-      <Card className="border-border bg-card shadow-2xl max-h-[88vh] flex flex-col overflow-x-auto">
+      <Card className="border-border bg-card shadow-2xl max-h-[88vh] min-h-0 flex flex-col overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between border-b border-border/60 pb-4 shrink-0">
           <div>
             <CardTitle className="flex items-center gap-2">
@@ -124,8 +124,8 @@ export function NewOrderModal({
           </button>
         </CardHeader>
 
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4 py-4 text-xs">
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <CardContent className="min-h-0 flex-1 overflow-y-auto space-y-4 py-4 text-xs">
               {/* Row 1: Kendaraan */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
