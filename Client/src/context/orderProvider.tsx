@@ -2,32 +2,20 @@
 import { useState, useMemo, useEffect } from "react"
 import type { OrderRecord, OrderStatus } from "@/types/carwash"
 import { OrderContext } from "./orderContext"
-import { INITIAL_ORDERS } from '../data/mockData'
+
 import { api } from "@/api"
 
 export function OrderProvider({ children }: { children: React.ReactNode }) {
-  const [orders, setOrders] = useState<OrderRecord[]>(INITIAL_ORDERS)
-  const noBay = [1,2,3,4]
-  const assignBay = () => { 
-  const result = [...noBay]; 
+  const [orders, setOrders] = useState<OrderRecord[]>([])
+ 
   
-  for (let i = result.length - 1; i > 0; i--) {
-    
-    const j = Math.floor(Math.random() * (i + 1));
-    
-    
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  
-  return result;
-  }
   //  Ambil order yang tersimpan dari database backend saat load
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         const res = await api.get('/api/order')
         if (res.data?.data && Array.isArray(res.data.data)) {
-          const mappedOrders: OrderRecord[] = res.data.data.map((o: any) => ({
+          const mappedOrders: OrderRecord[] = res.data.data.map((o: any,index:number) => ({
             id: o.id,
             orderCode: o.orderCode,
             vehiclePlate: o.vehiclePlate,
@@ -45,14 +33,14 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
             services: o.orderItems?.map((i: any) => 
               i.quantity > 1 ? `${i.service?.name} (${i.quantity}x)` : i.service?.name
             ) || [],
-            bayNumber: assignBay()[assignBay.length-1],
+            bayNumber: o.bayNumber || ((index % 4) + 1),
             startedAt: new Date(o.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
             staffName: 'Kasir Aktif',
           }))
           setOrders(mappedOrders)
         }
       } catch (error) {
-        console.warn('Gagal memuat order dari API, menggunakan data cadangan:', error)
+        console.warn('Gagal memuat order dari API, log error :', error)
       }
     }
 
