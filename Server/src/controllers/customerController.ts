@@ -39,7 +39,10 @@ export const getAllCustomer = async(req: Request, res: Response,next:NextFunctio
                     mode:'insensitive'
                 }
                
-            },
+            }, include: {
+        membership: true,
+        orders: true,
+    },
             take: limit,
             skip:skip,
             orderBy:{
@@ -91,7 +94,7 @@ export const updateCustomer= async (req:Request,res:Response,next:NextFunction) 
         const {name, phone} = req.body
         
         
-        const updatedCustomer = await prisma.service.update({
+        const updatedCustomer = await prisma.customer.update({
             where: {
                 id:Number(id)
             },

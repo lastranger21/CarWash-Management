@@ -6,7 +6,7 @@ import { PrismaClientExtends } from '@prisma/client/extension';
 
 export const createService = async (req:Request,res:Response) => {
     try {
-        const {name, price, description} = req.body
+        const {name, price, description,duration,category} = req.body
         const id = (req as any).user.id
         const image = req.file ? req.file.filename : null
         const newProduct = await prisma.service.create({
@@ -14,6 +14,8 @@ export const createService = async (req:Request,res:Response) => {
                 name: name,
                 price: Number(price),
                 description: description,
+                duration,
+                category,
                 image
             }
         })
@@ -98,7 +100,7 @@ export const getServiceById = async(req:Request,res:Response,next:NextFunction) 
 export const updateService= async (req:Request,res:Response,next:NextFunction) => {
     try {
         const {id} = req.params
-        const {name, price, description} = req.body
+        const {name, price, description,duration,category} = req.body
         
         const image = req.file ? req.file.filename : null
         const updatedService = await prisma.service.update({
@@ -109,7 +111,9 @@ export const updateService= async (req:Request,res:Response,next:NextFunction) =
                 name:name,
                 price:Number(price),
                 description:description,
-                image
+                image,
+                category,
+                duration
             }
         })
         return res.status(200).json({

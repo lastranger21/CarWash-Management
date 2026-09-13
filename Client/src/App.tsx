@@ -5,7 +5,6 @@ import { StatCards } from './components/dashboard/StatCards'
 import { BayMonitor } from './components/dashboard/BayMonitor'
 import { RecentOrdersTable } from './components/dashboard/RecentOrdersTable'
 import { NewOrderModal } from './components/dashboard/NewOrderModal'
-import { INITIAL_SERVICES } from './data/mockData'
 import { CustomerPage } from './components/dashboard/Customer'
 import { ServicesPage } from './components/dashboard/Service'
 import { OrderHistoryPage } from './components/dashboard/HistoryOrder'
@@ -13,39 +12,40 @@ import { Login } from './components/auth/Login'
 import { Register } from './components/auth/Register'
 import { OrderProvider } from './context/orderProvider'
 import { useOrder } from './hooks/useOrder'
+import { useAuth } from './hooks/useAuth'
+import { useService } from './hooks/useService'
+import { CustomerProvider } from './context/customerProvider'
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const { isAuthenticated, isLoading } = useAuth()
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
-  if (!isAuthenticated) {
+ if (isLoading) {
+    return <div className="flex min-h-screen items-center justify-center">Memuat...</div>
+  }
+ if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
         {authMode === 'login' ? (
-          <Login
-            onLoginSuccess={() => setIsAuthenticated(true)}
-            onSwitchToRegister={() => setAuthMode('register')} 
-          />
+          <Login onSwitchToRegister={() => setAuthMode('register')} />
         ) : (
-          <Register
-            onRegisterSuccess={() => {
-              alert('Pendaftaran akun berhasil! Silakan login.')
-              setAuthMode('login') 
-            }}
-            onSwitchToLogin={() => setAuthMode('login')} // <-- Kembali ke Login
-          />
+          <Register onSwitchToLogin={() => setAuthMode('login')} />
         )}
       </div>
     )
   }
   return (
+   <CustomerProvider>
     <OrderProvider>
       <Dashboard />
     </OrderProvider>
+    </CustomerProvider>
   )
 }
 
 function Dashboard() {
   const { orders, addOrder } = useOrder()
-  const [services, setServices] = useState(INITIAL_SERVICES)
+  const { services } = useService()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'ADMIN'
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -64,7 +64,7 @@ function Dashboard() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenNewOrder={() => setIsModalOpen(true)}
-        onLogout={() => setIsAuthenticated(false)}
+        isAdmin={isAdmin}
       />
 
       {/* Main Content Area */}
@@ -91,11 +91,11 @@ function Dashboard() {
               </>
 )}
 
-{activeTab === 'bay' && (
+{activeTab === 'bay' && isAdmin && (
     <OrderHistoryPage orders={orders} />
   )}
-{activeTab === 'services' && (
-    <ServicesPage services={services} setServices={setServices} />
+{activeTab === 'services' && isAdmin && (
+    <ServicesPage />
   )}
 
             

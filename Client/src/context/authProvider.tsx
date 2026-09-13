@@ -1,7 +1,7 @@
 import { useState,useEffect } from "react"
 import { type AuthUser } from "@/types/user"
 import {AuthContext,STORAGE_KEY} from "./authContext"
-
+import { api } from "@/api"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -21,48 +21,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
   // Fungsi Login
-  const login = async (email: string, _password?: string): Promise<boolean> => {
-    try {
-      // CATATAN: Nanti di sini Anda bisa memanggil API backend Express:
-      // const res = await axios.post('/api/login', { email, password })
-      // Simulasi autentikasi berhasil:
-      const loggedInUser: AuthUser = {
-        id: Date.now(),
-        name: email.toLowerCase().includes('admin') ? 'Admin Kasir' : 'Staf Kasir Pagi',
-        email: email.trim(),
-        role: email.toLowerCase().includes('admin') ? 'ADMIN' : 'STAFF',
-      }
-      setUser(loggedInUser)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(loggedInUser))
-      return true
-    } catch (error) {
-      console.error('Login gagal:', error)
-      return false
+  const login = async (email: string, password?: string): Promise<boolean> => {
+  try {
+    const res = await api.post('/api/auth/login', { email, password })
+    if (res.data.token) {
+      localStorage.setItem('token', res.data.token)
     }
+    const userData = res.data.user || {
+      id: Date.now(),
+      name: email.toLowerCase().includes('admin') ? 'Admin Kasir' : 'Staf Kasir',
+      email: email.trim(),
+      role: 'ADMIN',
+    }
+    setUser(userData)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
+    return true
+  } catch (error) {
+    console.error('Login gagal:', error)
+    return false
   }
+}
   // Fungsi Register
-  const register = async (name: string, email: string, _password?: string): Promise<boolean> => {
-    try {
-      // CATATAN: Nanti di sini panggil API backend:
-      // const res = await axios.post('/api/register', { name, email, password })
-      const newUser: AuthUser = {
-        id: Date.now(),
-        name: name.trim(),
-        email: email.trim(),
-        role: 'STAFF',
-      }
-      setUser(newUser)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
-      return true
-    } catch (error) {
-      console.error('Register gagal:', error)
-      return false
-    }
+  const register = async (name: string, email: string, password?: string): Promise<boolean> => {
+  try {
+    await api.post('/api/auth/register', { name, email, password, role: 'STAFF' })
+    return true
+  } catch (error) {
+    console.error('Register gagal:', error)
+    return false
   }
+}
   // Fungsi Logout
   const logout = () => {
     setUser(null)
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem('token') 
   }
   return (
     <AuthContext.Provider

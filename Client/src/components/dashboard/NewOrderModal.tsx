@@ -1,16 +1,21 @@
 import { useState } from 'react'
-import { X, Car, Sparkles, Check, CreditCard, Banknote, QrCode } from 'lucide-react'
+import { X, Car, Sparkles, PackageCheck, CreditCard, Banknote, QrCode,Plus,Minus,ShoppingBag}from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-
+import { useCustomer } from '@/hooks/useCustomer'
 import { type ServiceItem, type OrderRecord } from '../../types/carwash'
-
+import { api } from '@/api'
+import { useOrder } from '@/hooks/useOrder'
 interface NewOrderModalProps {
   isOpen: boolean
   onClose: () => void
   services: ServiceItem[]
-  onAddOrder: (newOrder: OrderRecord) => void
+  onAddOrder: (newOrder: OrderRecord,apiPayload?: {
+      customerId: number
+      vehiclePlate: string
+      items: { serviceId: number; quantity: number }[]
+    }) => void
 }
 
 export function NewOrderModal({
@@ -24,28 +29,58 @@ export function NewOrderModal({
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [isMember, setIsMember] = useState(false)
-  const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([1])
+  const [selectedQuantities, setSelectedQuantities] = useState<Record<number, number>>({ 1: 1 })
   const [paymentOption, setPaymentOption] = useState<'NOW' | 'LATER'>('NOW')
   const [paymentMethod, setPaymentMethod] = useState<'QRIS' | 'CASH' | 'DEBIT'>('CASH')
   const [cashReceived, setCashReceived] = useState<string>('')
-
+  const [discountPercent, setDiscountPercent] = useState(0)
+  const { customers, addCustomer } = useCustomer()
+  const {addOrder,confirmPayment} = useOrder()
   if (!isOpen) return null
-
-  const toggleService = (id: number) => {
-    if (selectedServiceIds.includes(id)) {
-      if (selectedServiceIds.length > 1) {
-        setSelectedServiceIds(selectedServiceIds.filter((item) => item !== id))
+  const handlePhoneChange = (phoneInput: string) => {
+    setCustomerPhone(phoneInput)
+    const existing = customers.find(
+      (c) => c.phone.trim() === phoneInput.trim() && phoneInput.trim().length >= 8
+    )
+    if (existing) {
+      setCustomerName(existing.name)
+      if (existing.membership && existing.membership.isActive) {
+        setIsMember(true)
+        setDiscountPercent(existing.membership.discountPercent)
       }
-    } else {
-      setSelectedServiceIds([...selectedServiceIds, id])
     }
   }
-
-  const selectedServices = services.filter((s) => selectedServiceIds.includes(s.id))
-  const subtotal = selectedServices.reduce((acc, curr) => acc + curr.price, 0)
-  const discountPercent = isMember ? 10 : 0
-  const discountAmount = Math.round((subtotal * discountPercent) / 100)
-  const total = subtotal - discountAmount
+ // Fungsi Menambah Kuantitas (+1)
+const increaseQuantity = (id: number) => {
+  setSelectedQuantities((prev) => ({
+    ...prev,
+    [id]: (prev[id] || 0) + 1,
+  }))
+}
+// Fungsi Mengurangi Kuantitas (-1)
+const decreaseQuantity = (id: number) => {
+  setSelectedQuantities((prev) => {
+    const currentQty = prev[id] || 0
+    if (currentQty <= 1) {
+      // Jika dikurangi dari 1, hilangkan item dari daftar terpilih
+      const updated = { ...prev }
+      delete updated[id]
+      return updated
+    }
+    return {
+      ...prev,
+      [id]: currentQty - 1,
+    }
+  })
+}
+// Hitung Subtotal berdasarkan (harga × kuantitas)
+const subtotal = services.reduce((sum, svc) => {
+  const qty = selectedQuantities[svc.id] || 0
+  return sum + (svc.price * qty)
+}, 0)
+ 
+const discountAmount = Math.round((subtotal * discountPercent) / 100)
+const total = subtotal - discountAmount
 
   const numericCash = parseFloat(cashReceived.replace(/\D/g, '')) || 0
   const change = numericCash - total
@@ -59,21 +94,52 @@ export function NewOrderModal({
     { label: '200.000', value: 200000 },
   ].filter((item) => item.value >= total || item.label === 'Uang Pas')
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {
+     e.preventDefault()
     if (!vehiclePlate.trim() || !customerName.trim()) {
       alert('Mohon lengkapi Plat Nomor dan Nama Pelanggan')
       return
     }
-
-    if (paymentOption === 'NOW' && paymentMethod === 'CASH' && numericCash < total) {
-      alert(
-        `Uang tunai yang diterima masih kurang Rp ${(total - numericCash).toLocaleString('id-ID')}!`
-      )
+    //  cek dan daftar customer
+    let targetCustomerId: number | undefined
+    const existingCustomer = customers.find(
+      (c) =>
+        (customerPhone.trim() && c.phone.trim() === customerPhone.trim()) ||
+        c.name.toLowerCase().trim() === customerName.toLowerCase().trim()
+    )
+    if (existingCustomer) {
+      targetCustomerId = existingCustomer.id
+    } else {
+      // Buat customer baru ke backend
+      try {
+        const resCust = await api.post('/api/customers', {
+          name: customerName.trim(),
+          phone: customerPhone.trim() || '-',
+        })
+        targetCustomerId = resCust.data?.data?.id
+      } catch (err) {
+        console.warn('Gagal buat customer baru di DB:', err)
+      }
+    }
+    // 2. Siapkan items untuk backend Prisma
+    const apiItems = services
+      .filter((svc) => (selectedQuantities[svc.id] || 0) > 0)
+      .map((svc) => ({
+        serviceId: svc.id,
+        quantity: selectedQuantities[svc.id] || 1,
+      }))
+    if (apiItems.length === 0) {
+      alert('Silakan pilih minimal 1 layanan!')
       return
     }
-
+    // 3. Siapkan UI record
     const orderNumber = Math.floor(100 + Math.random() * 900)
+    const selectedServicesList = services
+      .filter((svc) => (selectedQuantities[svc.id] || 0) > 0)
+      .map((svc) => {
+        const qty = selectedQuantities[svc.id]
+        return qty > 1 ? `${svc.name} (${qty}x)` : svc.name
+      })
     const newOrder: OrderRecord = {
       id: Date.now(),
       orderCode: `CW-2609-${orderNumber}`,
@@ -91,13 +157,46 @@ export function NewOrderModal({
       total,
       cashReceived: paymentOption === 'NOW' && paymentMethod === 'CASH' ? numericCash : undefined,
       change: paymentOption === 'NOW' && paymentMethod === 'CASH' ? change : undefined,
-      services: selectedServices.map((s) => s.name),
+      services: selectedServicesList,
       bayNumber: Math.floor(Math.random() * 4) + 1,
       startedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       staffName: 'Kasir Aktif',
     }
-
-    onAddOrder(newOrder)
+    //  Kirim ke onAddOrder beserta apiPayload jika customerId tersedia
+    const apiPayload = targetCustomerId
+      ? {
+          customerId: targetCustomerId,
+          vehiclePlate: vehiclePlate.toUpperCase().trim(),
+          items: apiItems,
+        }
+      : undefined
+    try {
+      // 1. Kirim order ke backend
+      const res = await api.post('/api/order', apiPayload)
+      const createdOrderFromDb = res.data?.data
+      // 2. Tampilkan di state lokal
+      addOrder({
+        ...newOrder,
+        id: createdOrderFromDb?.id || newOrder.id,
+        orderCode: createdOrderFromDb?.orderCode || newOrder.orderCode,
+      })
+      // 3. JIKA KASIR PILIH "BAYAR SEKARANG", SEGERA PROSES PEMBAYARANNYA DI DATABASE
+      if (paymentOption === 'NOW' && createdOrderFromDb?.id) {
+        await confirmPayment(
+          createdOrderFromDb.id,
+          paymentMethod,
+          paymentMethod === 'CASH' ? numericCash : undefined,
+          paymentMethod === 'CASH' ? change : undefined
+        )
+      }
+      onClose()
+    } catch (err) {
+      console.error('Gagal buat order:', err)
+      // Fallback ke lokal jika backend offline
+      addOrder(newOrder)
+      onClose()
+    }
+    onAddOrder(newOrder, apiPayload)
     onClose()
   }
 
@@ -109,7 +208,7 @@ export function NewOrderModal({
           <div>
             <CardTitle className="flex items-center gap-2">
               <Car className="size-5 text-primary" />
-              Input Transaksi POS & Antrean Baru
+              Input Order Baru
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               Daftarkan kendaraan masuk ke antrean cuci dan proses pembayaran kasir
@@ -168,7 +267,7 @@ export function NewOrderModal({
                   <Input
                     placeholder="0812xxxxxxxx"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
                   />
                 </div>
               </div>
@@ -199,43 +298,97 @@ export function NewOrderModal({
 
               {/* Service Selection */}
               <div>
-                <label className="font-semibold block mb-1.5">Pilih Layanan Cuci & Detailing</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {services.map((svc) => {
-                    const isSelected = selectedServiceIds.includes(svc.id)
-                    return (
-                      <div
-                        key={svc.id}
-                        onClick={() => toggleService(svc.id)}
-                        className={`cursor-pointer rounded-lg border p-2.5 transition-all flex items-start justify-between ${
-                          isSelected
-                            ? 'border-primary bg-primary/5 shadow-xs'
-                            : 'border-border/60 hover:border-border bg-card'
-                        }`}
-                      >
-                        <div className="pr-2">
-                          <p className="font-semibold text-foreground">{svc.name}</p>
-                          <p className="text-[11px] text-muted-foreground line-clamp-1">
-                            {svc.description}
-                          </p>
-                          <p className="mt-1 text-xs font-bold text-primary">
-                            Rp {svc.price.toLocaleString('id-ID')}
-                          </p>
-                        </div>
-                        <div
-                          className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border ${
-                            isSelected
-                              ? 'border-primary bg-primary text-white'
-                              : 'border-border'
-                          }`}
-                        >
-                          {isSelected && <Check className="size-3" />}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+  <div className="flex items-center justify-between mb-1.5">
+    <label className="font-semibold block text-foreground">
+      Pilih Layanan Cuci & Detailing
+    </label>
+    <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+      <ShoppingBag className="size-3.5 text-primary" />
+      Klik <strong>+</strong> atau <strong>-</strong> untuk mengatur jumlah
+    </span>
+  </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+    {services.map((svc) => {
+      const qty = selectedQuantities[svc.id] || 0
+      const isSelected = qty > 0
+      return (
+        <div
+          key={svc.id}
+          className={`relative rounded-xl border p-3 transition-all flex flex-col justify-between ${
+            isSelected
+              ? 'border-primary/80 bg-primary/5 shadow-xs ring-1 ring-primary/20'
+              : 'border-border/60 hover:border-border/90 bg-card hover:bg-muted/20'
+          }`}
+        >
+          {/* Header Kartu: Nama & Badge Kuantitas */}
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-1.5">
+                <p className="font-bold text-sm text-foreground">{svc.name}</p>
               </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                {svc.description}
+              </p>
+            </div>
+            {/* Ikon Indikator Kuantitas Menarik (Muncul jika dipilih) */}
+            {isSelected && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold text-primary-foreground shadow-xs animate-in zoom-in-75">
+                <PackageCheck className="size-3" />
+                {qty}x
+              </span>
+            )}
+          </div>
+          {/* Footer Kartu: Harga Satuan & Tombol Stepper Kuantitas */}
+          <div className="mt-3 pt-2 border-t border-border/50 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-primary font-mono">
+                Rp {svc.price.toLocaleString('id-ID')}
+              </p>
+              {qty > 1 && (
+                <p className="text-[10px] text-muted-foreground font-semibold">
+                  Total: Rp {(svc.price * qty).toLocaleString('id-ID')}
+                </p>
+              )}
+            </div>
+            {/* Stepper Kuantitas: [-] [qty] [+] */}
+            {isSelected ? (
+              <div className="flex items-center gap-1 rounded-lg border border-border/80 bg-background p-0.5 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => decreaseQuantity(svc.id)}
+                  className="flex size-6 items-center justify-center rounded-md hover:bg-muted text-foreground transition-colors cursor-pointer"
+                  title="Kurangi kuantitas"
+                >
+                  <Minus className="size-3" />
+                </button>
+                <span className="min-w-[24px] text-center font-extrabold text-xs font-mono text-primary">
+                  {qty}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => increaseQuantity(svc.id)}
+                  className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer"
+                  title="Tambah kuantitas"
+                >
+                  <Plus className="size-3" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => increaseQuantity(svc.id)}
+                className="flex items-center gap-1 rounded-lg border border-border/80 bg-background px-2.5 py-1 text-xs font-semibold text-foreground hover:border-primary hover:bg-primary/5 hover:text-primary transition-all cursor-pointer shadow-2xs"
+              >
+                <Plus className="size-3" />
+                Pilih
+              </button>
+            )}
+          </div>
+        </div>
+      )
+    })}
+  </div>
+</div>
 
               {/* Payment Section */}
               <div className="rounded-xl border border-border/80 bg-muted/20 p-3.5 space-y-3">
@@ -266,7 +419,37 @@ export function NewOrderModal({
                     </button>
                   </div>
                 </div>
+{/* Tampilkan item terpilih beserta kuantitasnya */}
+<div className="border-t border-border/60 pt-2 space-y-1 text-xs">
+  {services
+    .filter((svc) => (selectedQuantities[svc.id] || 0) > 0)
+    .map((svc) => {
+      const qty = selectedQuantities[svc.id]
+      return (
+        <div key={svc.id} className="flex justify-between text-muted-foreground text-[11px]">
+          <span>
+            {svc.name} <strong className="text-foreground">({qty}x)</strong>:
+          </span>
+          <span>Rp {(svc.price * qty).toLocaleString('id-ID')}</span>
+        </div>
+      )
+    })}
 
+  <div className="flex justify-between text-muted-foreground pt-1 border-t border-dashed border-border/50">
+    <span>Subtotal:</span>
+    <span>Rp {subtotal.toLocaleString('id-ID')}</span>
+  </div>
+  {discountAmount > 0 && (
+    <div className="flex justify-between text-emerald-600">
+      <span>Diskon Member (10%):</span>
+      <span>-Rp {discountAmount.toLocaleString('id-ID')}</span>
+    </div>
+  )}
+  <div className="flex justify-between font-bold text-sm text-foreground pt-1 border-t border-border/40">
+    <span>Total Tagihan:</span>
+    <span className="text-primary">Rp {total.toLocaleString('id-ID')}</span>
+  </div>
+</div>
                 {paymentOption === 'NOW' && (
                   <div className="space-y-3 pt-1">
                     <div className="grid grid-cols-3 gap-2">

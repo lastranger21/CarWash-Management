@@ -1,4 +1,4 @@
-import { Plus, Bell, RefreshCw, Moon, Sun } from 'lucide-react'
+import { Plus, RefreshCw } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 
@@ -45,7 +45,7 @@ export function Header({ onOpenNewOrder, onRefresh, isRefreshing }: HeaderProps)
           className="bg-primary text-primary-foreground font-semibold shadow-sm text-xs gap-1.5"
         >
           <Plus className="size-4" />
-          <span>Transaksi POS Baru</span>
+          <span>Buat Order  Baru</span>
         </Button>
       </div>
     </header>

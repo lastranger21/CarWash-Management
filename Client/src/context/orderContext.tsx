@@ -3,8 +3,15 @@ import { type OrderRecord,type OrderStatus } from "@/types/carwash";
 
 export interface OrderRecordContextType{
     orders: OrderRecord[]
-  addOrder: (newOrder: OrderRecord) => void
-  updateOrderStatus: (orderId: number, nextStatus: OrderStatus) => void
+  addOrder: (
+    newOrder: OrderRecord,
+    apiPayload?: {
+      customerId: number
+      vehiclePlate: string
+      items: { serviceId: number; quantity: number }[]
+    }
+  ) => void
+  updateOrderStatus: (orderId: number, nextStatus: OrderStatus, note?: string) =>Promise<boolean> | void
   confirmPayment: (
     orderId: number,
     paymentMethod: 'CASH' | 'QRIS' | 'DEBIT',

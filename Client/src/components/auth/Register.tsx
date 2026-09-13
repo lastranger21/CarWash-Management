@@ -11,17 +11,18 @@ import {
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Car } from "lucide-react"
-
+import { useAuth } from '@/hooks/useAuth'
 interface RegisterProps {
-  onRegisterSuccess: () => void
+  
   onSwitchToLogin: () => void 
 }
 
-export function Register({ onRegisterSuccess,onSwitchToLogin }: RegisterProps) {
+export function Register({ onSwitchToLogin }: RegisterProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
-  const handleSubmit = (e: React.FormEvent) => {
+  const {register} = useAuth()
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) {
       alert('Mohon masukkan email dan password!')
@@ -30,7 +31,13 @@ export function Register({ onRegisterSuccess,onSwitchToLogin }: RegisterProps) {
 
     // pasang api backend user logic disini
 
-    onRegisterSuccess()
+    const success = await register(name, email, password)
+    if (success) {
+      alert('Pendaftaran berhasil! Silakan login.')
+      onSwitchToLogin()
+  } else {
+    alert('Pendaftaran gagal!')
+}
   }
   
 

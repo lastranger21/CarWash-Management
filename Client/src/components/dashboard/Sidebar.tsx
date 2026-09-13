@@ -14,18 +14,21 @@ interface SidebarProps {
   activeTab: string
   setActiveTab: (tab: string) => void
   onOpenNewOrder: () => void
-  
+  isAdmin: boolean
 }
 
-export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder }: SidebarProps) {
+export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder, isAdmin }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard Operasional', icon: LayoutDashboard },
-    { id: 'pos', label: 'Kasir & POS', icon: CreditCard },
+    { id: 'pos', label: 'Buat Order Baru', icon: CreditCard },
     { id: 'bay', label: 'Riwayat Transaksi', icon: ClipboardList },
     { id: 'services', label: 'Paket & Layanan', icon: BrushCleaning },
     { id: 'customers', label: 'Pelanggan & Member', icon: Users },
   ]
-  const {logout} =useAuth()
+  const { logout, user } = useAuth()
+  const visibleMenuItems = menuItems.filter(
+    (item) => isAdmin || (item.id !== 'bay' && item.id !== 'services')
+  )
   return (
     <aside className="hidden w-64 flex-col border-r border-border bg-card p-4 lg:flex justify-between shrink-0">
       <div>
@@ -36,7 +39,7 @@ export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder }: SidebarProp
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight text-foreground">
-              CleanWash Pro
+              Cleanser Pro
             </h1>
             <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -50,7 +53,7 @@ export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder }: SidebarProp
           <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Menu Utama
           </p>
-          {menuItems.map((item) => {
+          {visibleMenuItems.map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.id
             return (
@@ -85,14 +88,19 @@ export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder }: SidebarProp
               AD
             </div>
             <div>
-              <p className="text-xs font-semibold text-foreground">Admin Kasir</p>
+              <p className="text-xs font-semibold text-foreground">{
+              
+              user?.name
+              }</p>
               <p className="text-[10px] text-muted-foreground">Shift Pagi • Bay 1-4</p>
             </div>
           </div>
           <button
             title="Keluar"
             className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          onClick={ logout}
+          onClick={ () => {
+          if (confirm('Yakin ingin logout?')) logout()
+        }}
          >
             <LogOut className="size-4" />
           </button>

@@ -9,7 +9,7 @@ const router = Router()
 
 
 router.post("/",authentication, authorizeRole(["ADMIN"]),upload.single('image'),validate(createServiceSchema),createService)
-router.get("/",authentication, getAllService)
+router.get("/", getAllService)
 router.get("/:id",getServiceById)
 router.put("/:id",authentication, authorizeRole(["ADMIN"]),upload.single('image'),updateService)
 router.delete("/:id",authentication, authorizeRole(["ADMIN"]),deleteService)

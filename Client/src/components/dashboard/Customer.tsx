@@ -17,26 +17,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
+import { useCustomer } from '@/hooks/useCustomer'
+import type { CustomerItem } from '@/types/customer'
 
-// 1. Tipe Data disesuaikan dengan Model Customer & Membership Prisma
-export interface CustomerItem {
-  id: number
-  name: string
-  phone: string
-  createdAt: string
-  frequentPlate: string
-  totalWashes: number
-  totalSpent: number
-  lastVisit: string
-  // Data Membership (Relasi 1-to-1 opsional)
-  membership?: {
-    id: number
-    memberCode: string
-    discountPercent: number
-    isActive: boolean
-    joinedAt: string
-  }
-}
+
 
 // 2. Data Awal Mock
 const INITIAL_CUSTOMERS: CustomerItem[] = [
@@ -122,7 +106,7 @@ const INITIAL_CUSTOMERS: CustomerItem[] = [
 ]
 
 export function CustomerPage() {
-  const [customers, setCustomers] = useState<CustomerItem[]>(INITIAL_CUSTOMERS)
+  const { customers, addCustomer, toggleMembership } = useCustomer()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE_MEMBER' | 'REGULAR' | 'INACTIVE_MEMBER'>('ALL')
   
@@ -161,76 +145,27 @@ export function CustomerPage() {
 
   // Fungsi Toggle Status Membership (Aktif / Nonaktif / Daftar Baru)
   const handleToggleMembership = (customerId: number) => {
-    setCustomers((prev) =>
-      prev.map((cust) => {
-        if (cust.id !== customerId) return cust
-
-        if (!cust.membership) {
-          // Jika belum member, daftarkan jadi member aktif
-          const randomCode = Math.floor(100 + Math.random() * 900)
-          return {
-            ...cust,
-            membership: {
-              id: Date.now(),
-              memberCode: `MBR-2026-${randomCode}`,
-              discountPercent: 10,
-              isActive: true,
-              joinedAt: new Date().toLocaleDateString('id-ID', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-              }),
-            },
-          }
-        } else {
-          // Jika sudah punya membership, ubah status aktif/nonaktifnya
-          return {
-            ...cust,
-            membership: {
-              ...cust.membership,
-              isActive: !cust.membership.isActive,
-            },
-          }
-        }
-      })
-    )
-  }
+  toggleMembership(customerId)
+}
 
   // Fungsi Submit Tambah Pelanggan Baru
-  const handleAddCustomerSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newName.trim() || !newPhone.trim()) {
-      alert('Nama dan Nomor HP wajib diisi!')
-      return
-    }
-
-    const randomCode = Math.floor(100 + Math.random() * 900)
-    const newCustomer: CustomerItem = {
-      id: Date.now(),
-      name: newName.trim(),
-      phone: newPhone.trim(),
-      createdAt: 'Hari ini',
-      frequentPlate: newPlate.toUpperCase().trim() || 'B 0000 XXX',
-      totalWashes: 0,
-      totalSpent: 0,
-      lastVisit: 'Belum pernah',
-      membership: registerAsMember
-        ? {
-            id: Date.now() + 1,
-            memberCode: `MBR-2026-${randomCode}`,
-            discountPercent: 10,
-            isActive: true,
-            joinedAt: 'Hari ini',
-          }
-        : undefined,
-    }
-
-    setCustomers([newCustomer, ...customers])
-    setNewName('')
-    setNewPhone('')
-    setNewPlate('')
-    setIsAddModalOpen(false)
+  const handleAddCustomerSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!newName.trim() || !newPhone.trim()) {
+    alert('Nama dan Nomor HP wajib diisi!')
+    return
   }
+  await addCustomer({
+    name: newName,
+    phone: newPhone,
+    plate: newPlate,
+    registerAsMember,
+  })
+  setNewName('')
+  setNewPhone('')
+  setNewPlate('')
+  setIsAddModalOpen(false)
+}
 
   return (
     <div className="space-y-6">
@@ -485,7 +420,7 @@ export function CustomerPage() {
 
                       {/* Total Belanja */}
                       <td className="px-4 py-3 text-right font-bold text-foreground">
-                        Rp {cust.totalSpent.toLocaleString('id-ID')}
+                        Rp {cust.totalSpent?.toLocaleString('id-ID')}
                       </td>
 
                       {/* Tombol Aksi */}
@@ -516,7 +451,7 @@ export function CustomerPage() {
                             size="icon-xs"
                             variant="ghost"
                             title="Lihat Profil & Riwayat"
-                            onClick={() => setSelectedCustomer(cust)}
+                            onClick={() => setSelectedCustomer(cust )}
                           >
                             <History className="size-3.5 text-muted-foreground" />
                           </Button>

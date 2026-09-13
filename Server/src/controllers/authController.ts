@@ -41,9 +41,15 @@ export const login = async (req:Request,res:Response,next:NextFunction) =>{
             id: user.id, name:user.email, role: user.role
         },process.env.JWT_SECRET as string,
         {expiresIn:'1d'});
-        return res.status(200).json({
+         res.status(200).json({
             message: "login berhasil!",
             token,
+            user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+    }
         })
     } catch (error) {
         next(error)

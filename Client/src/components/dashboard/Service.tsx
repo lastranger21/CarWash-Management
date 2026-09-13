@@ -15,16 +15,13 @@ import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { type ServiceItem } from '../../types/carwash'
+import { useService } from '@/hooks/useService'
 
-interface ServicesPageProps {
-  services: ServiceItem[]
-  setServices: React.Dispatch<React.SetStateAction<ServiceItem[]>>
-}
 
-export function ServicesPage({ services, setServices }: ServicesPageProps) {
+export function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
-
+  const { services, addService, updateService, deleteService} = useService()
   // State Modal Form (Tambah / Edit)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingServiceId, setEditingServiceId] = useState<number | null>(null)
@@ -57,51 +54,42 @@ export function ServicesPage({ services, setServices }: ServicesPageProps) {
   }
 
   // Simpan Layanan (Tambah Baru / Update)
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim() || price === '' || Number(price) <= 0) {
-      alert('Mohon isi nama layanan dan harga yang valid!')
-      return
-    }
-
-    if (editingServiceId !== null) {
-      // Mode Edit
-      setServices((prev) =>
-        prev.map((s) =>
-          s.id === editingServiceId
-            ? {
-                ...s,
-                name: name.trim(),
-                price: Number(price),
-                durationMinutes: Number(durationMinutes) || 20,
-                category,
-                description: description.trim(),
-              }
-            : s
-        )
-      )
-    } else {
-      // Mode Tambah Baru
-      const newService: ServiceItem = {
-        id: Date.now(),
-        name: name.trim(),
-        price: Number(price),
-        durationMinutes: Number(durationMinutes) || 20,
-        category,
-        description: description.trim() || 'Layanan cuci kendaraan',
-      }
-      setServices((prev) => [newService, ...prev])
-    }
-
-    setIsModalOpen(false)
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!name.trim() || price === '' || Number(price) <= 0) {
+    alert('Mohon isi nama layanan dan harga yang valid!')
+    return
   }
+  if (editingServiceId !== null) {
+    // Mode Edit: Panggil updateService dari context
+    updateService(editingServiceId, {
+      name: name.trim(),
+      price: Number(price),
+      durationMinutes: Number(durationMinutes) || 20,
+      category,
+      description: description.trim(),
+    })
+  } else {
+    // Mode Tambah Baru: Panggil addService dari context
+    const newService: ServiceItem = {
+      id: Date.now(),
+      name: name.trim(),
+      price: Number(price),
+      durationMinutes: Number(durationMinutes) || 20,
+      category,
+      description: description.trim() || 'Layanan cuci kendaraan',
+    }
+    addService(newService)
+  }
+  setIsModalOpen(false)
+}
 
   // Hapus Layanan
   const handleDeleteService = (id: number, serviceName: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus layanan "${serviceName}"?`)) {
-      setServices((prev) => prev.filter((s) => s.id !== id))
-    }
+  if (confirm(`Apakah Anda yakin ingin menghapus layanan "${serviceName}"?`)) {
+    deleteService(id)
   }
+}
 
   // Filter Layanan
   const filteredServices = services.filter((svc) => {

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../lib/prisma';
 import { OrderStatus } from '@prisma/client';
-// 1. Buat Order Baru (Wireframe Screen 4)
+
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { customerId, vehiclePlate, items } = req.body;
@@ -77,7 +77,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     next(error);
   }
 };
-// 2. Update Status 6-Stage dengan Validasi PRD
+// 2. Update Status order
 export const updateOrderStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
@@ -89,7 +89,6 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
     if (!order) {
       return res.status(404).json({ message: 'Order tidak ditemukan' });
     }
-    // VALIDASI ATURAN BISNIS PRD:
     // COMPLETED hanya diperbolehkan jika order READY dan paymentStatus = PAID
     if (nextStatus === 'COMPLETED') {
       if (order.status !== 'READY' as OrderStatus) {

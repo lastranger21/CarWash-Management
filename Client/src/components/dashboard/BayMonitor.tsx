@@ -9,10 +9,10 @@ import { useOrder} from '@/hooks/useOrder'
 export function BayMonitor() {
   const { orders, updateOrderStatus } = useOrder()
   const activeBays = [
-    { bayNumber: 1, name: 'Bay 1 (Cuci Hidrolik A)', type: 'WASHING' },
-    { bayNumber: 2, name: 'Bay 2 (Cuci Salju B)', type: 'WASHING' },
-    { bayNumber: 3, name: 'Bay 3 (Drying & Interior A)', type: 'DRYING' },
-    { bayNumber: 4, name: 'Bay 4 (Drying & Interior B)', type: 'DRYING' },
+    { bayNumber: 1, name: 'Bay 1 ', type: 'WASHING' },
+    { bayNumber: 2, name: 'Bay 2 ', type: 'WASHING' },
+    { bayNumber: 3, name: 'Bay 3 ', type: 'DRYING' },
+    { bayNumber: 4, name: 'Bay 4 ', type: 'DRYING' },
   ]
 
   const getNextStatus = (current: OrderStatus): OrderStatus | null => {

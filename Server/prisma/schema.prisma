@@ -49,7 +49,9 @@ model Service {
   id Int @id @default(autoincrement())
   name String
   price Int
-  description String? 
+  description String?
+  duration Int @default(45)
+  category String @default("WASH")
   isActive Boolean @default(true)
   image String? 
   orderItems  OrderItem[]

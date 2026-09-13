@@ -11,16 +11,17 @@ import {
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Car } from "lucide-react"
+import { useAuth } from '@/hooks/useAuth'
 interface LoginProps {
-  onLoginSuccess: () => void
-  onSwitchToRegister: () => void // <-- Tambah prop ini
+  
+  onSwitchToRegister: () => void 
 }
 
-export function Login({ onLoginSuccess,onSwitchToRegister }: LoginProps) {
+export function  Login({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const {login} = useAuth()
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) {
       alert('Mohon masukkan email dan password!')
@@ -29,7 +30,10 @@ export function Login({ onLoginSuccess,onSwitchToRegister }: LoginProps) {
 
     // pasang api backend user logic disini
 
-    onLoginSuccess()
+     const success = await login(email, password) // <-- Panggil fungsi dengan parameter
+  if (!success) {
+    alert('Login gagal! Periksa email dan password Anda.')
+  }
   }
   
 
