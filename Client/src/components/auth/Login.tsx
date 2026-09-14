@@ -12,12 +12,9 @@ import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Car } from "lucide-react"
 import { useAuth } from '@/hooks/useAuth'
-interface LoginProps {
-  
-  onSwitchToRegister: () => void 
-}
 
-export function  Login({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
+
+export function  Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const {login} = useAuth()
@@ -67,12 +64,12 @@ export function  Login({ onSwitchToRegister }: { onSwitchToRegister: () => void 
           <div className="grid gap-2 text-left">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              <a
+              {/*<a
                 href="#"
                 className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
               >
                 Lupa password?
-              </a>
+              </a>*/}
             </div>
             <Input
               id="password"
@@ -84,16 +81,7 @@ export function  Login({ onSwitchToRegister }: { onSwitchToRegister: () => void 
             />
             
           </div>
-          <div className="text-center pt-1 text-xs text-muted-foreground">
-            Belum punya akun?{' '}
-            <button
-              type="button"
-              onClick={onSwitchToRegister}
-              className="font-semibold text-primary underline-offset-4 hover:underline cursor-pointer"
-            >
-              Sign Up Disini
-            </button>
-          </div>
+          
         </CardContent>
 
         <CardFooter className="flex-col gap-2 pt-2">

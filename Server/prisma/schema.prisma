@@ -28,10 +28,21 @@ model User {
 model Customer {
   id            Int       @id @default(autoincrement())
   name          String
-  phone         String    @db.VarChar(16)
+  phone         String    @db.VarChar(16) @unique
   createdAt     DateTime  @default(now())
   membership Membership?
   orders     Order[]
+  vehicles      Vehicle[]
+}
+model Vehicle {
+  id           Int       @id @default(autoincrement())
+  plateNumber  String    @unique
+  modelName    String    
+  type         String    @default("CAR") 
+  createdAt    DateTime  @default(now())
+  customerId   Int
+  customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders       Order[]  //1-to-many
 }
 
 model Membership{
@@ -69,11 +80,16 @@ model Order {
   discount      Decimal              @db.Decimal(12, 2) @default(10.00)
   total         Int              
   createdAt     DateTime             @default(now())
+  bayId         Int?         
+  vehicleId     Int?         
+  bay           Bay?         @relation(fields: [bayId], references: [id])
   customer      Customer             @relation(fields: [customerId], references: [id])
   createdByUser User                 @relation(fields: [createdById], references: [id])
-  orderItems    OrderItem[]
-  payment       Payment?             // Relasi 1-to-1 ke Payment (karena orderId unique)
-  histories     OrderStatusHistory[] // Relasi 1-to-many ke riwayat status
+  orderItems    OrderItem[]          // Relasi 1-to-many
+  payment       Payment?             // Relasi 1-to-1 
+  histories     OrderStatusHistory[] // Relasi 1-to-many 
+  
+  vehicle       Vehicle?     @relation(fields: [vehicleId], references: [id])
 }
 
 model OrderItem {
@@ -111,6 +127,14 @@ model OrderStatusHistory {
 
   order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   changedBy   User        @relation(fields: [changedById], references: [id])
+}
+model Bay {
+  id Int @id @default(autoincrement())
+  name String 
+  status Boolean @default(true)
+  createdAt DateTime @default(now())
+  
+  orders Order[]
 }
 enum Role {
   ADMIN

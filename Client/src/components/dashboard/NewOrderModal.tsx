@@ -7,22 +7,19 @@ import { useCustomer } from '@/hooks/useCustomer'
 import { type ServiceItem, type OrderRecord } from '../../types/carwash'
 import { api } from '@/api'
 import { useOrder } from '@/hooks/useOrder'
+import { Label } from '../ui/label'
 interface NewOrderModalProps {
   isOpen: boolean
   onClose: () => void
   services: ServiceItem[]
-  onAddOrder: (newOrder: OrderRecord,apiPayload?: {
-      customerId: number
-      vehiclePlate: string
-      items: { serviceId: number; quantity: number }[]
-    }) => void
+  
 }
 
 export function NewOrderModal({
   isOpen,
   onClose,
   services,
-  onAddOrder,
+ 
 }: NewOrderModalProps) {
   const [vehiclePlate, setVehiclePlate] = useState('')
   const [vehicleModel, setVehicleModel] = useState('')
@@ -94,6 +91,13 @@ const total = subtotal - discountAmount
     { label: '200.000', value: 200000 },
   ].filter((item) => item.value >= total || item.label === 'Uang Pas')
 
+
+  const matchedCustomer = customers.find(
+    (c) =>
+      (customerPhone.trim() && c.phone.trim() === customerPhone.trim()) ||
+      (customerName.trim() && c.name.toLowerCase().trim() === customerName.toLowerCase().trim())
+  )
+  const registeredVehicles = matchedCustomer?.vehicles || []
   const handleSubmit = async (e: React.FormEvent) => {
      e.preventDefault()
     if (!vehiclePlate.trim() || !customerName.trim()) {
@@ -167,20 +171,21 @@ const total = subtotal - discountAmount
       ? {
           customerId: targetCustomerId,
           vehiclePlate: vehiclePlate.toUpperCase().trim(),
+          vehicleModel: vehicleModel.trim() || 'Mobil Standar',
           items: apiItems,
         }
       : undefined
     try {
-      // 1. Kirim order ke backend
+      // Kirim order ke backend
       const res = await api.post('/api/order', apiPayload)
       const createdOrderFromDb = res.data?.data
-      // 2. Tampilkan di state lokal
+      //  Tampilkan di state lokal
       addOrder({
         ...newOrder,
         id: createdOrderFromDb?.id || newOrder.id,
         orderCode: createdOrderFromDb?.orderCode || newOrder.orderCode,
       })
-      // 3. JIKA KASIR PILIH "BAYAR SEKARANG", SEGERA PROSES PEMBAYARANNYA DI DATABASE
+      //  JIKA KASIR PILIH "BAYAR SEKARANG", SEGERA PROSES PEMBAYARANNYA DI DATABASE
       if (paymentOption === 'NOW' && createdOrderFromDb?.id) {
         await confirmPayment(
           createdOrderFromDb.id,
@@ -196,7 +201,7 @@ const total = subtotal - discountAmount
       addOrder(newOrder)
       onClose()
     }
-    onAddOrder(newOrder, apiPayload)
+    
     onClose()
   }
 
@@ -226,28 +231,36 @@ const total = subtotal - discountAmount
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <CardContent className="min-h-0 flex-1 overflow-y-auto space-y-4 py-4 text-xs">
               {/* Row 1: Kendaraan */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="font-semibold block mb-1">
-                    Plat Nomor Kendaraan <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    placeholder="Contoh: B 1234 XYZ"
-                    value={vehiclePlate}
-                    onChange={(e) => setVehiclePlate(e.target.value)}
-                    required
-                    className="uppercase font-mono font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold block mb-1">Tipe & Warna Mobil</label>
-                  <Input
-                    placeholder="Contoh: Toyota Avanza Silver"
-                    value={vehicleModel}
-                    onChange={(e) => setVehicleModel(e.target.value)}
-                  />
-                </div>
-              </div>
+<div>
+    <Label className="text-xs font-medium">Nomor Plat Kendaraan</Label>
+    <Input
+      placeholder="B 1234 ABC"
+      value={vehiclePlate}
+      onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
+      required
+    />
+    
+    {registeredVehicles.length > 0 && (
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <span className="text-[10px] text-muted-foreground">Pilih mobil terdaftar:</span>
+        {registeredVehicles.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            onClick={() => {
+              setVehiclePlate(v.plateNumber)
+              setVehicleModel(v.modelName)
+            }}
+            className="flex items-center gap-1 rounded border border-border bg-muted/60 px-2 py-0.5 text-xs hover:border-primary hover:bg-primary/10 transition-colors"
+          >
+            <Car className="size-3 text-primary" />
+            <span className="font-bold">{v.plateNumber}</span>
+            <span className="text-[10px] text-muted-foreground">({v.modelName})</span>
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
 
               {/* Row 2: Customer & Membership */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

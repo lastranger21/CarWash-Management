@@ -3,11 +3,11 @@ import {
   LayoutDashboard,
   CreditCard,
   Users,
-
+UserRoundPlus,
   ClipboardList,
-  BrushCleaning,
   LogOut,
   Car,
+  Bubbles
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -15,17 +15,18 @@ interface SidebarProps {
   setActiveTab: (tab: string) => void
   onOpenNewOrder: () => void
   isAdmin: boolean
+  onOpenRegister?: () => void
 }
 
-export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder, isAdmin }: SidebarProps) {
+export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder, isAdmin,onOpenRegister }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard Operasional', icon: LayoutDashboard },
     { id: 'pos', label: 'Buat Order Baru', icon: CreditCard },
     { id: 'bay', label: 'Riwayat Transaksi', icon: ClipboardList },
-    { id: 'services', label: 'Paket & Layanan', icon: BrushCleaning },
+    { id: 'services', label: 'Paket & Layanan', icon: Bubbles },
     { id: 'customers', label: 'Pelanggan & Member', icon: Users },
   ]
-  const { logout, user } = useAuth()
+  const { logout, user,register } = useAuth()
   const visibleMenuItems = menuItems.filter(
     (item) => isAdmin || (item.id !== 'bay' && item.id !== 'services')
   )
@@ -43,7 +44,7 @@ export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder, isAdmin }: Si
             </h1>
             <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Sistem Aktif
+              Sistem Online
             </span>
           </div>
         </div>
@@ -95,6 +96,13 @@ export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder, isAdmin }: Si
               <p className="text-[10px] text-muted-foreground">Shift Pagi • Bay 1-4</p>
             </div>
           </div>
+          <button
+            title="Register"
+            className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          onClick={ onOpenRegister}
+         >
+            <UserRoundPlus className="size-4" />
+          </button>
           <button
             title="Keluar"
             className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"

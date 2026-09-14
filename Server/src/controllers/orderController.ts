@@ -4,7 +4,10 @@ import { OrderStatus } from '@prisma/client';
 
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { customerId, vehiclePlate, items } = req.body;
+    
+    const { customerId, vehiclePlate, vehicleModel, items } = req.body;
+    
+    const normalizedPlate = vehiclePlate.toUpperCase().trim();
     const staffId = (req as any).user.id; // Dari middleware auth JWT
     // Cek Customer & Membership
     const customer = await prisma.customer.findUnique({
@@ -43,11 +46,27 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     const orderCode = `#CW-${Date.now().toString().slice(-4)}`;
     // Eksekusi Atomic Transaction
     const newOrder = await prisma.$transaction(async (tx) => {
+      //  Cari atau buat kendaraan (Vehicle) di garasi customer
+      let vehicle = await tx.vehicle.findUnique({
+        where: { plateNumber: normalizedPlate },
+      });
+      if (!vehicle) {
+        vehicle = await tx.vehicle.create({
+          data: {
+            plateNumber: normalizedPlate,
+            modelName: vehicleModel?.trim() || 'Mobil Standar',
+            customerId: customer.id,
+          },
+        });
+      }
+      //  Buat Order yang terhubung ke Vehicle
       const order = await tx.order.create({
         data: {
           orderCode,
           customerId: customer.id,
-          vehiclePlate: vehiclePlate.toUpperCase(),
+          vehiclePlate: normalizedPlate,
+          
+          vehicleId: vehicle.id, // <-- Tautkan ke vehicle
           createdById: staffId,
           status: 'QUEUED' as OrderStatus,
           paymentStatus: 'UNPAID',
@@ -65,7 +84,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
             }
           }
         },
-        include: { orderItems: true, customer: true }
+        include: { orderItems: true, customer: true, vehicle: true }
       });
       return order;
     });
@@ -77,19 +96,23 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     next(error);
   }
 };
-// 2. Update Status order
+//  Update Status order
 export const updateOrderStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { nextStatus, note } = req.body;
+    const { nextStatus, note, bayId } = req.body; 
     const staffId = (req as any).user.id;
+if (!id || isNaN(Number(id)) || Number(id) > 2147483647) {
+      return res.status(400).json({ message: 'ID order tidak valid' });
+    }
     const order = await prisma.order.findUnique({
       where: { id: Number(id) }
     });
     if (!order) {
       return res.status(404).json({ message: 'Order tidak ditemukan' });
     }
-    // COMPLETED hanya diperbolehkan jika order READY dan paymentStatus = PAID
+
+    // Validasi COMPLETED harus READY dan PAID
     if (nextStatus === 'COMPLETED') {
       if (order.status !== 'READY' as OrderStatus) {
         return res.status(400).json({ 
@@ -102,12 +125,24 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
         });
       }
     }
-    // Update status dan simpan ke OrderStatusHistory
+
+    // Update status dan atur bayId di database
     const updated = await prisma.$transaction(async (tx) => {
+      // Jika pesanan selesai atau dibatalkan, mobil keluar dari bay (bayId diset null)
+      const targetBayId = (nextStatus === 'COMPLETED' || nextStatus === 'CANCELLED')
+        ? null
+        : bayId !== undefined
+          ? (bayId ? Number(bayId) : null)
+          : undefined;
+
       const updatedOrder = await tx.order.update({
         where: { id: Number(id) },
-        data: { status: nextStatus }
+        data: {
+          status: nextStatus,
+          ...(targetBayId !== undefined ? { bayId: targetBayId } : {})
+        }
       });
+
       await tx.orderStatusHistory.create({
         data: {
           orderId: Number(id),
@@ -116,8 +151,10 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
           note: note || `Status diperbarui ke ${nextStatus}`
         }
       });
+
       return updatedOrder;
     });
+
     return res.status(200).json({
       message: `Status order berhasil diperbarui menjadi ${nextStatus}`,
       data: updated
@@ -160,6 +197,7 @@ export const getAllOrders = async (req: Request, res: Response, next: NextFuncti
         skip: skip,
         orderBy: { createdAt: 'desc' }, // Order terbaru 
         include: {
+          bay: true, // <-- Sertakan data bay relasi
           customer: {
             select: {
               id: true,
@@ -175,7 +213,7 @@ export const getAllOrders = async (req: Request, res: Response, next: NextFuncti
               service: { select: { id: true, name: true, price: true } },
             },
           },
-          payment: true, // join table methode payment
+          payment: true,
         },
       }),
       prisma.order.count({ where: whereCondition }),
@@ -265,4 +303,99 @@ export const deleteOrder = async (req:Request, res: Response) => {
             error: error
         })
     }
+}
+export const updateOrder = async (req:Request,res:Response,next:NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { vehiclePlate, vehicleModel, bayId, items } = req.body;
+    const orderId = Number(id);
+    if (!orderId || isNaN(orderId) || orderId > 2147483647) {
+      return res.status(400).json({ message: 'ID order tidak valid' });
+    }
+    //  Cek order
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { customer: { include: { membership: true } } },
+    });
+    if (!existingOrder) {
+      return res.status(404).json({ message: 'Order tidak ditemukan' });
+    }
+    // Cegah edit jika order sudah selesai dan lunas
+    if (existingOrder.status === 'COMPLETED' && existingOrder.paymentStatus === 'PAID') {
+      return res.status(400).json({
+        message: 'Order yang sudah selesai dan lunas tidak dapat diubah!',
+      });
+    }
+    //  Eksekusi pembaruan
+    const updated = await prisma.$transaction(async (tx) => {
+      let subtotal = existingOrder.subtotal;
+      let discountAmount = Number(existingOrder.discount);
+      let total = existingOrder.total;
+      
+      if (items && Array.isArray(items) && items.length > 0) {
+        // Hapus item lama
+        await tx.orderItem.deleteMany({ where: { orderId } });
+        // Ambil harga layanan terbaru dari DB
+        const serviceIds = items.map((i: any) => Number(i.serviceId));
+        const services = await tx.service.findMany({
+          where: { id: { in: serviceIds } },
+        });
+        subtotal = 0;
+        const newItemsData = items.map((item: any) => {
+          const svc = services.find((s) => s.id === Number(item.serviceId));
+          const price = svc ? svc.price : 0;
+          const qty = item.quantity || 1;
+          const itemSubtotal = price * qty;
+          subtotal += itemSubtotal;
+          return {
+            serviceId: Number(item.serviceId),
+            quantity: qty,
+            priceSnapshot: price,
+            subtotal: itemSubtotal,
+          };
+        });
+        // Hitung diskon 
+        let discountPercent = 0;
+        if (existingOrder.customer.membership?.isActive) {
+          discountPercent = Number(existingOrder.customer.membership.discountPercent);
+        }
+        discountAmount = Math.round((subtotal * discountPercent) / 100);
+        total = subtotal - discountAmount;
+        // Masukkan item baru
+        await tx.orderItem.createMany({
+          data: newItemsData.map((d) => ({ ...d, orderId })),
+        });
+      }
+      // Update tabel Order
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          ...(vehiclePlate ? { vehiclePlate: vehiclePlate.toUpperCase().trim() } : {}),
+          ...(bayId !== undefined ? { bayId: bayId ? Number(bayId) : null } : {}),
+          subtotal,
+          discount: discountAmount,
+          total,
+        },
+        include: {
+          customer: true,
+          orderItems: { include: { service: true } },
+          bay: true,
+        },
+      });
+      // Update nama model vehiccle
+      if (existingOrder.vehicleId && vehicleModel) {
+        await tx.vehicle.update({
+          where: { id: existingOrder.vehicleId },
+          data: { modelName: vehicleModel.trim() },
+        });
+      }
+      return updatedOrder;
+    });
+    return res.status(200).json({
+      message: 'Order berhasil diperbarui',
+      data: updated,
+    });
+  } catch (error) {
+    next(error)
+  }
 }

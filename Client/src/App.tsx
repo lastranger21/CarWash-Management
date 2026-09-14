@@ -17,18 +17,16 @@ import { useService } from './hooks/useService'
 import { CustomerProvider } from './context/customerProvider'
 function App() {
   const { isAuthenticated, isLoading } = useAuth()
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
+  
  if (isLoading) {
     return <div className="flex min-h-screen items-center justify-center">Memuat...</div>
   }
  if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
-        {authMode === 'login' ? (
-          <Login onSwitchToRegister={() => setAuthMode('register')} />
-        ) : (
-          <Register onSwitchToLogin={() => setAuthMode('login')} />
-        )}
+        
+          <Login  />
+        
       </div>
     )
   }
@@ -49,13 +47,8 @@ function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isRegister, setIsRegister] = useState(false)
 
-  const handleRefresh = () => {
-    setIsRefreshing(true)
-    setTimeout(() => {
-      setIsRefreshing(false)
-    }, 600)
-  }
 
   return (
     <div className="flex min-h-screen bg-background font-sans text-foreground">
@@ -65,13 +58,18 @@ function Dashboard() {
         setActiveTab={setActiveTab}
         onOpenNewOrder={() => setIsModalOpen(true)}
         isAdmin={isAdmin}
+        onOpenRegister={() => setIsRegister(true)}
       />
-
+      
+<Register
+        isOpen={isRegister}
+        onClose={() => setIsRegister(false)}
+      />
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-x-hidden">
         <Header
           onOpenNewOrder={() => setIsModalOpen(true)}
-          onRefresh={handleRefresh}
+          
           isRefreshing={isRefreshing}
         />
         <main className="flex-1 space-y-6 p-4 md:p-6 lg:p-8 w-full">
@@ -111,7 +109,7 @@ function Dashboard() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         services={services}
-        onAddOrder={addOrder}
+        
       />
     </div>
   )

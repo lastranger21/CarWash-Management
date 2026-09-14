@@ -6,6 +6,7 @@ import {
   getOrderById,
   updateOrderStatus,
   deleteOrder,
+  updateOrder
 } from '../controllers/orderController';
 import { authentication } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/authorizeRole';
@@ -41,8 +42,13 @@ router.get(
   authorizeRole(['ADMIN', 'STAFF']),
   getOrderById
 );
+router.put(
+  '/:id',
+  authorizeRole(['ADMIN', 'STAFF']),
+  updateOrder
+);
 
-// 4. Update Status Pengerjaan (RECEIVED -> QUEUED -> WASHING -> DRYING -> READY -> COMPLETED)
+//  Update Status Pengerjaan (RECEIVED -> QUEUED -> WASHING -> DRYING -> READY -> COMPLETED)
 router.patch(
   '/:id/status',
   authorizeRole(['ADMIN', 'STAFF']),

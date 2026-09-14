@@ -1,31 +1,58 @@
 // file: Client/src/components/dashboard/BayMonitor.tsx
-import { Waves, Wind, CheckCircle2, Clock, ArrowRight} from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Waves, Wind, CheckCircle2, Clock, ArrowRight, AlertTriangle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import {type OrderStatus } from '../../types/carwash'
+import { type OrderRecord, type OrderStatus } from '../../types/carwash'
 import { useOrder } from '@/hooks/useOrder'
+import { api } from '@/api'
+
+interface BayData {
+  id: number
+  name: string
+  status: boolean
+}
 
 export function BayMonitor() {
   const { orders, updateOrderStatus } = useOrder()
+  const [bays, setBays] = useState<BayData[]>([])
 
-  const activeBays = [
-    { bayNumber: 1, name: 'Bay 1 (Cuci Salju)', type: 'WASHING' },
-    { bayNumber: 2, name: 'Bay 2 (Cuci Salju)', type: 'WASHING' },
-    { bayNumber: 3, name: 'Bay 3 (Pengeringan)', type: 'DRYING' },
-    { bayNumber: 4, name: 'Bay 4 (Detailing)', type: 'DRYING' },
-  ]
+  // Ambil daftar bilik dari backend
+  const fetchBays = async () => {
+    try {
+      const res = await api.get('/api/bays')
+      if (res.data?.data) {
+        setBays(res.data.data)
+      }
+    } catch (err) {
+      console.warn('Gagal ambil data bay, fallback default:', err)
+      setBays([
+        { id: 1, name: 'Bay 1 (Cuci Salju)', status: true },
+        { id: 2, name: 'Bay 2 (Cuci Salju)', status: true },
+        { id: 3, name: 'Bay 3 (Pengeringan)', status: true },
+        { id: 4, name: 'Bay 4 (Detailing)', status: true },
+      ])
+    }
+  }
 
-  // Filter order yang belum selesai
-  const activeOrders = orders.filter((o) => o.status !== 'COMPLETED' && o.status !== 'CANCELLED')
+  useEffect(() => {
+    fetchBays()
+  }, [])
 
-  // Mobil yang sedang mengantre (belum masuk bay atau status QUEUED / RECEIVED)
-  const queuedOrders = activeOrders.filter((o) => o.status === 'QUEUED' || o.status === 'RECEIVED')
+  // Order yang masih mengantre (belum dapat bilik bay)
+  const queuedOrders = orders.filter(
+    (o) => (o.status === 'QUEUED' || o.status === 'RECEIVED') && !o.bayNumber
+  )
+
+  // Cari bay pertama yang sedang kosong & aktif
+  const availableBays = bays.filter(
+    (b) => b.status && !orders.some((o) => o.bayNumber === b.id && o.status !== 'COMPLETED' && o.status !== 'CANCELLED')
+  )
 
   const getNextStatus = (current: OrderStatus): OrderStatus | null => {
     switch (current) {
       case 'RECEIVED':
-        return 'QUEUED'
       case 'QUEUED':
         return 'WASHING'
       case 'WASHING':
@@ -59,21 +86,14 @@ export function BayMonitor() {
             <CheckCircle2 className="size-3" /> Siap Ambil
           </Badge>
         )
-      case 'QUEUED':
-      case 'RECEIVED':
-        return (
-          <Badge variant="secondary">
-            <Clock className="size-3" /> Dalam Antrean
-          </Badge>
-        )
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="secondary">{status}</Badge>
     }
   }
 
   return (
     <div className="space-y-4">
-      {/* 1. MONITOR 4 BILIK BAY AKTIF */}
+      {/* 1. MONITOR BILIK BAY AKTIF DARI DATABASE */}
       <Card className="border-border/80">
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <div>
@@ -82,29 +102,30 @@ export function BayMonitor() {
               Live Bay & Progress Cuci Kendaraan
             </CardTitle>
             <p className="mt-1 text-xs text-muted-foreground">
-              Monitoring slot hidrolik, bilik cuci salju, dan area pengeringan real-time
+              Monitoring slot hidrolik, bilik cuci salju, dan area pengeringan real-time dari database
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <span className="inline-block size-2 rounded-full bg-emerald-500 animate-pulse" />
-            Live Update
+            Live Database
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {activeBays.map((bay, idx) => {
-              // Cari order yang cocok dengan nomor bay, atau fallback alokasi dari order aktif
-              const currentOrder =
-                orders.find((o) => o.bayNumber === bay.bayNumber && o.status !== 'COMPLETED') ||
-                activeOrders[idx]
-
+            {bays.map((bay) => {
+              // Cari mobil yang saat ini sedang di bilik ini
+              const currentOrder = orders.find(
+                (o) => o.bayNumber === bay.id && o.status !== 'COMPLETED' && o.status !== 'CANCELLED'
+              )
               const nextStatus = currentOrder ? getNextStatus(currentOrder.status) : null
 
               return (
                 <div
-                  key={bay.bayNumber}
+                  key={bay.id}
                   className={`relative flex flex-col justify-between rounded-xl border p-4 transition-all ${
-                    currentOrder
+                    !bay.status
+                      ? 'border-red-500/40 bg-red-500/5'
+                      : currentOrder
                       ? 'border-border bg-card/60 shadow-xs'
                       : 'border-dashed border-border/70 bg-muted/20'
                   }`}
@@ -114,7 +135,11 @@ export function BayMonitor() {
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         {bay.name}
                       </span>
-                      {currentOrder ? (
+                      {!bay.status ? (
+                        <Badge variant="destructive" className="flex items-center gap-1">
+                          <AlertTriangle className="size-3" /> Maintenance
+                        </Badge>
+                      ) : currentOrder ? (
                         getStatusBadge(currentOrder.status)
                       ) : (
                         <Badge variant="outline" className="border-dashed text-muted-foreground">
@@ -123,7 +148,14 @@ export function BayMonitor() {
                       )}
                     </div>
 
-                    {currentOrder ? (
+                    {!bay.status ? (
+                      <div className="my-6 flex flex-col items-center justify-center text-center">
+                        <p className="text-xs font-medium text-destructive">Bilik Nonaktif</p>
+                        <span className="mt-1 text-[11px] text-muted-foreground">
+                          Sedang dalam perbaikan teknis
+                        </span>
+                      </div>
+                    ) : currentOrder ? (
                       <div className="mt-3">
                         <div className="inline-block rounded-md bg-neutral-900 px-2.5 py-1 text-xs font-bold tracking-widest text-white shadow-xs dark:border dark:border-neutral-700">
                           {currentOrder.vehiclePlate}
@@ -150,15 +182,15 @@ export function BayMonitor() {
                       </div>
                     ) : (
                       <div className="my-6 flex flex-col items-center justify-center text-center">
-                        <p className="text-xs text-muted-foreground">Bay Tersedia</p>
+                        <p className="text-xs text-muted-foreground">Bilik Tersedia</p>
                         <span className="mt-1 text-[11px] text-muted-foreground/70">
-                          Siap untuk mobil antrean berikutnya
+                          Siap menerima antrean berikutnya
                         </span>
                       </div>
                     )}
                   </div>
 
-                  {currentOrder && nextStatus && (
+                  {bay.status && currentOrder && nextStatus && (
                     <div className="mt-4 pt-3 border-t border-border/50">
                       <Button
                         size="sm"
@@ -177,15 +209,19 @@ export function BayMonitor() {
         </CardContent>
       </Card>
 
-      {/* 2. DAFTAR ANTREAN KENDARAAN MENUNGGU (WAITING QUEUE) */}
+      {/* 2. DAFTAR ANTREAN MENUNGGU (WAITING QUEUE) */}
       {queuedOrders.length > 0 && (
         <Card className="border-border/70 bg-muted/10">
           <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-600 dark:text-amber-400">
               <Clock className="size-4" />
-              Antrean Menunggu Masuk Bay ({queuedOrders.length} Kendaraan)
+              Antrean Menunggu Masuk Bilik ({queuedOrders.length} Mobil)
             </CardTitle>
-            <span className="text-xs text-muted-foreground">Urut berdasarkan waktu order</span>
+            <span className="text-xs text-muted-foreground">
+              {availableBays.length > 0
+                ? `${availableBays.length} Bilik Sedang Kosong`
+                : 'Semua Bilik Sedang Terisi'}
+            </span>
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
@@ -200,11 +236,21 @@ export function BayMonitor() {
                   </div>
                   <Button
                     size="sm"
-                    variant="outline"
-                    className="h-7 text-[11px] px-2"
-                    onClick={() => updateOrderStatus(order.id, 'WASHING')}
+                    disabled={availableBays.length === 0}
+                    className="h-7 text-[11px] px-2.5"
+                    onClick={async () => {
+                      if (availableBays.length > 0) {
+                        const targetBay = availableBays[0]
+                        // Masukkan ke bilik bay kosong pertama dan ubah status ke WASHING
+                        await api.patch(`/api/order/${order.id}/status`, {
+                          nextStatus: 'WASHING',
+                          bayId: targetBay.id,
+                        })
+                        window.location.reload() // atau panggil refresh
+                      }
+                    }}
                   >
-                    Mulai Cuci
+                    {availableBays.length > 0 ? `Masuk ${availableBays[0].name.split(' ')[0]}` : 'Antre'}
                   </Button>
                 </div>
               ))}

@@ -1,14 +1,21 @@
 import { DollarSign, Car, Timer, Award, ArrowUpRight, TrendingUp } from 'lucide-react'
 import { Card, CardContent } from '../ui/card'
 import { type OrderRecord } from '../../types/carwash'
+import { useOrder } from '@/hooks/useOrder'
 
 interface StatCardsProps {
   orders: OrderRecord[]
 }
 
 export function StatCards({ orders }: StatCardsProps) {
+  
+  const todayStr = new Date().toDateString()
   const totalRevenue = orders
-    .filter((o) => o.paymentStatus === 'PAID')
+    .filter((o) => {
+      if (o.paymentStatus !== 'PAID') return false
+      if (!o.createdAt) return true // jika baru dibuat hari ini di sesi aktif tanpa timestamp
+      return new Date(o.createdAt).toDateString() === todayStr
+    })
     .reduce((acc, curr) => acc + curr.total, 0)
 
   const completedCount = orders.filter((o) => o.status === 'COMPLETED').length
@@ -16,20 +23,20 @@ export function StatCards({ orders }: StatCardsProps) {
     ['QUEUED', 'WASHING', 'DRYING'].includes(o.status)
   ).length
   const memberTransactions = orders.filter((o) => o.isMember).length
-
+  const {carCountToday} = useOrder()
   const stats = [
     {
       title: 'Omzet Hari Ini',
       value: `Rp ${totalRevenue.toLocaleString('id-ID')}`,
-      change: '+18.2% vs kemarin',
-      trend: 'up',
+      change: 'penghasilan cuci mobil hari ini',
+      trend: 'neutral',
       icon: DollarSign,
       iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
     },
     {
       title: 'Mobil Selesai Dicuci',
-      value: `${completedCount} Kendaraan`,
-      change: 'Rata-rata 24 menit/mobil',
+      value: `${carCountToday} Kendaraan`,
+      change: 'Mobil yang Berhasil Dicuci',
       trend: 'neutral',
       icon: Car,
       iconBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
@@ -37,7 +44,7 @@ export function StatCards({ orders }: StatCardsProps) {
     {
       title: 'Sedang Proses & Antrean',
       value: `${inProgressCount} Kendaraan`,
-      change: '4 Bay terisi penuh',
+      change: '4 Bay Siap Beroperasi',
       trend: 'warning',
       icon: Timer,
       iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
@@ -45,7 +52,7 @@ export function StatCards({ orders }: StatCardsProps) {
     {
       title: 'Member Transaksi',
       value: `${memberTransactions} Pelanggan`,
-      change: '10-15% diskon terpakai',
+      change: '10% diskon terpakai',
       trend: 'up',
       icon: Award,
       iconBg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',

@@ -7,6 +7,12 @@ export interface MembershipItem {
   isActive: boolean
   joinedAt: string
 }
+export interface VehicleItem {
+  id: number
+  plateNumber: string
+  modelName: string
+  type?: string
+}
 
 export interface CustomerItem {
   id: number
@@ -18,6 +24,7 @@ export interface CustomerItem {
   totalSpent: number       
   lastVisit: string        
   membership?: MembershipItem
+  vehicles?: VehicleItem[]
 }
 
 export interface CreateCustomerPayload {

@@ -61,27 +61,51 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await api.get('/api/customers')
       if (res.data?.data && Array.isArray(res.data.data)) {
-        const mapped: CustomerItem[] = res.data.data.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          phone: item.phone,
-          createdAt: item.createdAt ? new Date(item.createdAt).toLocaleDateString('id-ID') : 'Baru saja',
-          frequentPlate: item.orders?.[0]?.vehiclePlate || 'B 0000 XXX',
-          totalWashes: item.orders?.length || 0,
-          totalSpent: item.orders?.reduce((acc: number, curr: any) => acc + (curr.total || 0), 0) || 0,
-          lastVisit: item.orders?.[0]?.createdAt ? 'Terakhir order' : 'Belum pernah',
-          membership: item.membership
-            ? {
-                id: item.membership.id,
-                memberCode: item.membership.memberCode,
-                discountPercent: Number(item.membership.discountPercent) || 10,
-                isActive: item.membership.isActive,
-                joinedAt: item.membership.joinedAt
-                  ? new Date(item.membership.joinedAt).toLocaleDateString('id-ID')
-                  : 'Hari ini',
-              }
-            : undefined,
-        }))
+        const mapped: CustomerItem[] = res.data.data.map((item: any) => {
+          //  Ambil plat dari kendaraan terdaftar ATAU dari order terakhir
+          const activePlate =
+            item.vehicles?.[0]?.plateNumber ||
+            item.orders?.[0]?.vehiclePlate ||
+            'Belum Ada'
+          // Hitung jumlah transaksi order nyata di database
+          const totalWashesCount = item.orders ? item.orders.length : 0
+          //  Hitung total uang belanja dari database
+          const totalSpentAmount = item.orders
+            ? item.orders.reduce((acc: number, curr: any) => acc + (Number(curr.total) || 0), 0)
+            : 0
+          // Ambil tanggal riil kunjungan terakhir
+          const lastVisitText = item.orders?.[0]?.createdAt
+            ? new Date(item.orders[0].createdAt).toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+              })
+            : 'Belum pernah'
+          return {
+            id: item.id,
+            name: item.name,
+            phone: item.phone,
+            createdAt: item.createdAt
+              ? new Date(item.createdAt).toLocaleDateString('id-ID')
+              : 'Baru saja',
+            frequentPlate: activePlate,
+            totalWashes: totalWashesCount,
+            totalSpent: totalSpentAmount,
+            lastVisit: lastVisitText,
+            membership: item.membership
+              ? {
+                  id: item.membership.id,
+                  memberCode: item.membership.memberCode,
+                  discountPercent: Number(item.membership.discountPercent) || 10,
+                  isActive: item.membership.isActive,
+                  joinedAt: item.membership.joinedAt
+                    ? new Date(item.membership.joinedAt).toLocaleDateString('id-ID')
+                    : 'Hari ini',
+                }
+              : undefined,
+            vehicles: item.vehicles || [],
+          }
+        })
+        setCustomers(mapped)
         setCustomers(mapped)
       }
     } catch (error) {
@@ -104,6 +128,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       phone: payload.phone.trim(),
       createdAt: 'Hari ini',
       frequentPlate: payload.plate?.toUpperCase().trim() || 'B 0000 XXX',
+      
       totalWashes: 0,
       totalSpent: 0,
       lastVisit: 'Belum pernah',
@@ -114,6 +139,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       const res = await api.post('/api/customers', {
         name: payload.name.trim(),
         phone: payload.phone.trim(),
+        plate: payload.plate?.toUpperCase().trim() || undefined,
       })
 
       const created = res.data?.data || fallbackCustomer
@@ -122,6 +148,9 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         id: created.id,
         name: created.name,
         phone: created.phone,
+        frequentPlate:
+          created.vehicles?.[0]?.plateNumber || payload.plate?.toUpperCase().trim() || 'Belum Ada',
+        vehicles: created.vehicles || [],
       }
 
       // Jika dicentang daftar membership

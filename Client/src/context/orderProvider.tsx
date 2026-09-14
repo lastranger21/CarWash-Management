@@ -4,10 +4,11 @@ import type { OrderRecord, OrderStatus } from "@/types/carwash"
 import { OrderContext } from "./orderContext"
 
 import { api } from "@/api"
+import { useAuth } from "@/hooks/useAuth"
 
 export function OrderProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<OrderRecord[]>([])
- 
+  const {user} = useAuth()
   
   //  Ambil order yang tersimpan dari database backend saat load
   useEffect(() => {
@@ -35,7 +36,8 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
             ) || [],
             bayNumber: o.bayNumber || ((index % 4) + 1),
             startedAt: new Date(o.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-            staffName: 'Kasir Aktif',
+            staffName: user?.name,
+            createdAt: o.createdAt,
           }))
           setOrders(mappedOrders)
         }
@@ -158,6 +160,26 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     () => orders.filter((o) => o.paymentStatus === 'UNPAID').length,
     [orders]
   )
+  const carCountToday = useMemo(() => {
+    const today = new Date()
+
+    return orders.filter((order) => {
+      if (!order.createdAt) return false
+
+      const createdAt = new Date(order.createdAt)
+      return (
+        createdAt.getFullYear() === today.getFullYear() &&
+        createdAt.getMonth() === today.getMonth() &&
+        createdAt.getDate() === today.getDate()
+      )
+    }).length
+  }, [orders])
+  const updateOrder = (orderId: number, updatedData: Partial<OrderRecord>) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, ...updatedData } : o))
+    )
+  }
+
 
   return (
     <OrderContext.Provider
@@ -166,9 +188,11 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         addOrder,
         updateOrderStatus,
         confirmPayment,
+        updateOrder,
         totalRevenue,
         completedCount,
         unpaidCount,
+        carCountToday
       }}
     >
       {children}

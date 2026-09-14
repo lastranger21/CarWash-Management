@@ -1,14 +1,14 @@
-import { Plus, RefreshCw } from 'lucide-react'
+import { Plus} from 'lucide-react'
 import { Button } from '../ui/button'
-import { Badge } from '../ui/badge'
+
 
 interface HeaderProps {
   onOpenNewOrder: () => void
-  onRefresh: () => void
+  
   isRefreshing?: boolean
 }
 
-export function Header({ onOpenNewOrder, onRefresh, isRefreshing }: HeaderProps) {
+export function Header({ onOpenNewOrder, isRefreshing }: HeaderProps) {
   const todayFormatted = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
     year: 'numeric',
@@ -28,16 +28,7 @@ export function Header({ onOpenNewOrder, onRefresh, isRefreshing }: HeaderProps)
       </div>
 
       <div className="flex items-center gap-2.5">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRefresh}
-          className="text-xs gap-1.5"
-          disabled={isRefreshing}
-        >
-          <RefreshCw className={`size-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </Button>
+        
 
         <Button
           size="sm"

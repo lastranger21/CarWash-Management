@@ -4,27 +4,39 @@ import { triggerAsyncId } from 'node:async_hooks';
 import { PrismaClientExtends } from '@prisma/client/extension';
 
 
-export const createCustomer = async (req:Request,res:Response,next:NextFunction) => {
-    try {
-        const {name, phone} = req.body
-        //const id = (req as any).user.id
-        const newCustomer = await prisma.customer.create({
-            data: {
-                name: name,
-                phone: phone,
-
-                
+export const createCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, phone, plate } = req.body; 
+    const newCustomer = await prisma.customer.create({
+      data: {
+        name: name,
+        phone: phone,
+        // Jika plat disertakan, otomatis buat kendaraan di tabel Vehicle
+        ...(plate
+          ? {
+              vehicles: {
+                create: {
+                  plateNumber: plate.toUpperCase().trim(),
+                  modelName: 'Mobil Standar',
+                },
+              },
             }
-        })
-
-        return res.status(201).json({
-            message: "Customer Created!",
-            data: newCustomer
-        })
-    } catch (error) {
-        next(error)
-    }
-}
+          : {}),
+      },
+      include: {
+        vehicles: true,
+        membership: true,
+        orders: true,
+      },
+    });
+    return res.status(201).json({
+      message: 'Customer Created!',
+      data: newCustomer,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getAllCustomer = async(req: Request, res: Response,next:NextFunction) => {
     try {
@@ -42,6 +54,7 @@ export const getAllCustomer = async(req: Request, res: Response,next:NextFunctio
             }, include: {
         membership: true,
         orders: true,
+        vehicles: true
     },
             take: limit,
             skip:skip,

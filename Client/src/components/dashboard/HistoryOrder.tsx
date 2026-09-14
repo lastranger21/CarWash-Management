@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   History,
   Search,
@@ -25,7 +24,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-
+import { useState, useEffect } from 'react'
 interface OrderHistoryPageProps {
   orders: OrderRecord[]
 }
@@ -35,7 +34,12 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'COMPLETED' | 'CANCELLED' | 'IN_PROGRESS'>('ALL')
   const [payFilter, setPayFilter] = useState<'ALL' | 'PAID' | 'UNPAID'>('ALL')
   const [methodFilter, setMethodFilter] = useState<string>('ALL')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5 // Jumlah data per halaman
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter, payFilter, methodFilter])
   // State Modal Cetak Struk
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<OrderRecord | null>(null)
 
@@ -80,6 +84,9 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
 
     return true
   })
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage)
 
   // Helper Badge Status
   const getStatusBadge = (status: OrderStatus) => {
@@ -287,7 +294,7 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {filteredOrders.length === 0 ? (
+                {paginatedOrders.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-10 text-center text-muted-foreground">
                       <FileText className="size-8 mx-auto text-muted-foreground/40 mb-2" />
@@ -295,7 +302,7 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((order) => (
+                  paginatedOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-muted/30 transition-colors">
                       {/* No Tiket & Jam */}
                       <td className="px-5 py-3 font-mono">
@@ -404,8 +411,83 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
                   ))
                 )}
               </tbody>
+              
             </table>
           </div>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-border/60">
+            {/* Info Jumlah Data */}
+            <p className="text-xs text-muted-foreground">
+              Menampilkan{' '}
+              <span className="font-semibold text-foreground">
+                {filteredOrders.length === 0 ? 0 : startIndex + 1}
+              </span>{' '}
+              -{' '}
+              <span className="font-semibold text-foreground">
+                {Math.min(startIndex + itemsPerPage, filteredOrders.length)}
+              </span>{' '}
+              dari{' '}
+              <span className="font-semibold text-foreground">
+                {filteredOrders.length}
+              </span>{' '}
+              transaksi
+            </p>
+            {/* Tombol-Tombol Pagination */}
+            {totalPages > 1 && (
+              <Pagination className="mx-0 w-auto">
+                <PaginationContent>
+                  {/* Tombol Sebelumnya */}
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      text="Sebelumnya"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (currentPage > 1) setCurrentPage((p) => p - 1)
+                      }}
+                      className={
+                        currentPage === 1
+                          ? 'pointer-events-none opacity-40'
+                          : 'cursor-pointer'
+                      }
+                    />
+                  </PaginationItem>
+                  {/* Daftar Nomor Halaman (1, 2, 3...) */}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        href="#"
+                        isActive={currentPage === pageNum}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          setCurrentPage(pageNum)
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {pageNum}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  {/* Tombol Berikutnya */}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      text="Berikutnya"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (currentPage < totalPages) setCurrentPage((p) => p + 1)
+                      }}
+                      className={
+                        currentPage === totalPages
+                          ? 'pointer-events-none opacity-40'
+                          : 'cursor-pointer'
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </div>
+        
         </CardContent>
       </Card>
 
@@ -454,6 +536,7 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
                     <span className="text-muted-foreground">Petugas Kasir:</span>
                     <span className="font-medium">{detailOrder.staffName}</span>
                   </div>
+                  
                 </div>
 
                 {/* Paket Layanan */}
@@ -497,30 +580,7 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
                     </div>
                   )}
                 </div>
-                <Pagination>
-      <PaginationContent>
-        <PaginationItem>
-          <PaginationPrevious href="#" />
-        </PaginationItem>
-        <PaginationItem>
-          <PaginationLink href="#">1</PaginationLink>
-        </PaginationItem>
-        <PaginationItem>
-          <PaginationLink href="#" isActive>
-            2
-          </PaginationLink>
-        </PaginationItem>
-        <PaginationItem>
-          <PaginationLink href="#">3</PaginationLink>
-        </PaginationItem>
-        <PaginationItem>
-          <PaginationEllipsis />
-        </PaginationItem>
-        <PaginationItem>
-          <PaginationNext href="#" />
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
+                
               </CardContent>
 
               <div className="flex justify-between p-4 border-t border-border/60">

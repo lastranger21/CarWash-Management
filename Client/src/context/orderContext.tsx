@@ -18,8 +18,11 @@ export interface OrderRecordContextType{
     cashReceived?: number,
     change?: number
   ) => void
+  updateOrder: (orderId: number, updatedData: Partial<OrderRecord>) => void
   totalRevenue: number
   completedCount: number
   unpaidCount: number
+  carCountToday:number
+
 }
 export const OrderContext = createContext<OrderRecordContextType |undefined>(undefined) 

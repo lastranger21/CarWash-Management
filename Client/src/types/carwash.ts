@@ -39,4 +39,5 @@ export interface OrderRecord {
   bayNumber?: number
   startedAt: string
   staffName: string
+  createdAt?: string
 }

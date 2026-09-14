@@ -6,6 +6,7 @@ import customer from "./customerRoute"
 import payment from "./paymentRoute"
 import dashboard from "./dashboardRoute"
 import order from "./orderRoute"
+import bay from "./bayRoutes"
 const router = Router()
 router.use('/profile',userRoute);
 router.use('/service',serviceRoute)
@@ -14,4 +15,5 @@ router.use('/customers',customer)
 router.use('/payments',payment)
 router.use('/dashboard',dashboard)
 router.use('/order',order )
+router.use('/bay',bay)
 export default router;

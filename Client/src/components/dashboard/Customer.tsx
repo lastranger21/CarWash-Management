@@ -22,88 +22,6 @@ import type { CustomerItem } from '@/types/customer'
 
 
 
-// 2. Data Awal Mock
-const INITIAL_CUSTOMERS: CustomerItem[] = [
-  {
-    id: 1,
-    name: 'Budi Santoso',
-    phone: '081234567890',
-    createdAt: '10 Jan 2026',
-    frequentPlate: 'B 1492 ABC',
-    totalWashes: 14,
-    totalSpent: 945000,
-    lastVisit: 'Hari ini, 08:15',
-    membership: {
-      id: 101,
-      memberCode: 'MBR-2026-001',
-      discountPercent: 10,
-      isActive: true,
-      joinedAt: '12 Jan 2026',
-    },
-  },
-  {
-    id: 2,
-    name: 'Siti Rahma',
-    phone: '081987654321',
-    createdAt: '01 Feb 2026',
-    frequentPlate: 'B 3012 WXY',
-    totalWashes: 8,
-    totalSpent: 620000,
-    lastVisit: 'Hari ini, 08:05',
-    membership: {
-      id: 102,
-      memberCode: 'MBR-2026-015',
-      discountPercent: 15,
-      isActive: true,
-      joinedAt: '03 Feb 2026',
-    },
-  },
-  {
-    id: 3,
-    name: 'Ahmad Fauzi',
-    phone: '085712344321',
-    createdAt: '15 Feb 2026',
-    frequentPlate: 'D 8821 ZYX',
-    totalWashes: 3,
-    totalSpent: 285000,
-    lastVisit: 'Hari ini, 08:30',
-    // Tidak memiliki membership (Reguler)
-  },
-  {
-    id: 4,
-    name: 'Maya Kusuma',
-    phone: '081344556677',
-    createdAt: '20 Jan 2026',
-    frequentPlate: 'F 4421 CD',
-    totalWashes: 6,
-    totalSpent: 405000,
-    lastVisit: 'Kemarin',
-    membership: {
-      id: 103,
-      memberCode: 'MBR-2026-008',
-      discountPercent: 10,
-      isActive: true,
-      joinedAt: '25 Jan 2026',
-    },
-  },
-  {
-    id: 5,
-    name: 'Hendro Wijaya',
-    phone: '082199887766',
-    createdAt: '01 Mar 2026',
-    frequentPlate: 'B 9918 TAA',
-    totalWashes: 2,
-    totalSpent: 100000,
-    lastVisit: 'Hari ini, 08:50',
-    membership: {
-      id: 104,
-      memberCode: 'MBR-2026-099',
-      discountPercent: 10,
-      isActive: false, // Member dinonaktifkan
-      joinedAt: '05 Mar 2026',
-    },
-  },
-]
 
 export function CustomerPage() {
   const { customers, addCustomer, toggleMembership } = useCustomer()
@@ -169,7 +87,7 @@ export function CustomerPage() {
 
   return (
     <div className="space-y-6">
-      {/* 1. KARTU STATISTIK RINGKASAN */}
+      {/*  KARTU STATISTIK RINGKASAN */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-5 flex items-center justify-between">
@@ -238,7 +156,7 @@ export function CustomerPage() {
         </Card>
       </div>
 
-      {/* 2. TABEL PELANGGAN & STATUS MEMBER */}
+      {/*  TABEL PELANGGAN & STATUS MEMBER */}
       <Card>
         <CardHeader className="p-5 pb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

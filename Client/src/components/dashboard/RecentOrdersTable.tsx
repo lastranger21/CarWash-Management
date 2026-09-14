@@ -8,6 +8,7 @@ import {
   Wind,
   Printer,
   CreditCard,
+  Pencil
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -17,14 +18,14 @@ import { type OrderRecord, type OrderStatus } from '../../types/carwash'
 import { PaymentModal } from './PaymentModal'
 import { ReceiptModal } from './ReceiptModal'
 import { useOrder } from '@/hooks/useOrder'
-
-
+import { EditOrderModal } from './EditOrderModal'
 export function RecentOrdersTable() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'READY' | 'COMPLETED' | 'UNPAID'>('ALL')
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<OrderRecord | null>(null)
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<OrderRecord | null>(null)
   const { orders, updateOrderStatus,confirmPayment } = useOrder()
+  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<OrderRecord | null>(null)
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -254,7 +255,16 @@ export function RecentOrdersTable() {
                             Bayar
                           </Button>
                         )}
-
+                        {order.status !== 'COMPLETED' && (
+                                  <Button
+                                        size="icon-xs"
+                                        variant="ghost"
+                                        title="Edit Order"
+                                        onClick={() => setSelectedOrderForEdit(order)}
+                                  >
+                                    <Pencil className="size-3.5 text-muted-foreground hover:text-foreground" />
+                                  </Button>
+                        )}
                         {order.status === 'READY' && (
                           <Button
                             size="xs"
@@ -308,6 +318,12 @@ export function RecentOrdersTable() {
         isOpen={!!selectedOrderForReceipt}
         onClose={() => setSelectedOrderForReceipt(null)}
         order={selectedOrderForReceipt}
+      />
+            {/* Modal Edit Order */}
+      <EditOrderModal
+        isOpen={!!selectedOrderForEdit}
+        onClose={() => setSelectedOrderForEdit(null)}
+        order={selectedOrderForEdit}
       />
     </Card>
   )
