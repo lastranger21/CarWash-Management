@@ -125,7 +125,7 @@ const total = subtotal - discountAmount
         console.warn('Gagal buat customer baru di DB:', err)
       }
     }
-    // 2. Siapkan items untuk backend Prisma
+    //  Siapkan items untuk backend
     const apiItems = services
       .filter((svc) => (selectedQuantities[svc.id] || 0) > 0)
       .map((svc) => ({
@@ -136,7 +136,7 @@ const total = subtotal - discountAmount
       alert('Silakan pilih minimal 1 layanan!')
       return
     }
-    // 3. Siapkan UI record
+    //  Siapkan UI record
     const orderNumber = Math.floor(100 + Math.random() * 900)
     const selectedServicesList = services
       .filter((svc) => (selectedQuantities[svc.id] || 0) > 0)
@@ -165,8 +165,9 @@ const total = subtotal - discountAmount
       bayNumber: Math.floor(Math.random() * 4) + 1,
       startedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       staffName: 'Kasir Aktif',
+      createdAt: new Date().toISOString(),
     }
-    //  Kirim ke onAddOrder beserta apiPayload jika customerId tersedia
+    //  Kirim ke addOrder beserta apiPayload jika customerId tersedia
     const apiPayload = targetCustomerId
       ? {
           customerId: targetCustomerId,

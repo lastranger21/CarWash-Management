@@ -26,6 +26,7 @@ export function RecentOrdersTable() {
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<OrderRecord | null>(null)
   const { orders, updateOrderStatus,confirmPayment } = useOrder()
   const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<OrderRecord | null>(null)
+  const today = new Date()
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,7 +34,14 @@ export function RecentOrdersTable() {
       order.orderCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.vehicleModel.toLowerCase().includes(searchTerm.toLowerCase())
 
-    if (!matchesSearch) return false
+    const createdAt = order.createdAt ? new Date(order.createdAt) : null
+    const isToday = createdAt &&
+      !Number.isNaN(createdAt.getTime()) &&
+      createdAt.getFullYear() === today.getFullYear() &&
+      createdAt.getMonth() === today.getMonth() &&
+      createdAt.getDate() === today.getDate()
+
+    if (!matchesSearch || !isToday) return false
 
     if (statusFilter === 'ACTIVE') {
       return ['RECEIVED', 'QUEUED', 'WASHING', 'DRYING'].includes(order.status)
@@ -47,6 +55,7 @@ export function RecentOrdersTable() {
     if (statusFilter === 'UNPAID') {
       return order.paymentStatus === 'UNPAID'
     }
+    if (!order.createdAt) return true
     return true
   })
 

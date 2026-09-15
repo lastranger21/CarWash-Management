@@ -68,6 +68,12 @@ export function BayMonitor() {
 
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
+      case 'QUEUED':
+        return (
+          <Badge className='bg-amber-100 text-amber-800'>
+             Dalam Antrean
+          </Badge>
+        )
       case 'WASHING':
         return (
           <Badge variant="info">
@@ -142,7 +148,7 @@ export function BayMonitor() {
                       ) : currentOrder ? (
                         getStatusBadge(currentOrder.status)
                       ) : (
-                        <Badge variant="outline" className="border-dashed text-muted-foreground">
+                        <Badge  className="border-dashed text-muted-foreground bg-emerald-100 text-emerald-800">
                           Kosong
                         </Badge>
                       )}

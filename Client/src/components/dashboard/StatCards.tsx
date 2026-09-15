@@ -77,7 +77,7 @@ export function StatCards({ orders }: StatCardsProps) {
               <div className="mt-3">
                 <h3 className="text-2xl font-bold tracking-tight">{stat.value}</h3>
                 <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <TrendingUp className="size-3.5 text-emerald-500" />
+                  
                   <span className="font-medium text-emerald-600 dark:text-emerald-400">
                     {stat.change}
                   </span>
