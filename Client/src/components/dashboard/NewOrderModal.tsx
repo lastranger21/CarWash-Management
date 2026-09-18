@@ -70,7 +70,7 @@ const decreaseQuantity = (id: number) => {
     }
   })
 }
-// Hitung Subtotal berdasarkan (harga × kuantitas)
+// Hitung total harga seblum diskon(harga × kuantitas)
 const subtotal = services.reduce((sum, svc) => {
   const qty = selectedQuantities[svc.id] || 0
   return sum + (svc.price * qty)

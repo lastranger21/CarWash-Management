@@ -16,7 +16,7 @@ export function ReceiptModal({ isOpen, onClose, order }: ReceiptModalProps) {
   const handlePrint = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    // Cegah klik ganda / terpanggil berulang kali
+    // pastikan print hanya sekali
     if (isPrinting) return
     setIsPrinting(true)
     const receiptElement = document.getElementById('thermal-receipt-content')

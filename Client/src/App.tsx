@@ -76,10 +76,10 @@ function Dashboard() {
  {activeTab === 'dashboard' && (
   <>
         
-          {/* Top KPI Metrics */}
+          {/* statistik order */}
           <StatCards orders={orders} />
 
-          {/* Live Bay & Wash Process Monitor */}
+          {/* Live Bay & update status */}
           <BayMonitor   />
 
           {/* Bottom Grid: Recent Orders Table & Service Performance */}
@@ -104,7 +104,7 @@ function Dashboard() {
         </main>
       </div>
 
-      {/* POS Modal for New Order */}
+      {/* buat order baru */}
       <NewOrderModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

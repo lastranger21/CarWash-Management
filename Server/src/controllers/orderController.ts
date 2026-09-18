@@ -331,7 +331,7 @@ export const updateOrder = async (req:Request,res:Response,next:NextFunction) =>
       let subtotal = existingOrder.subtotal;
       let discountAmount = Number(existingOrder.discount);
       let total = existingOrder.total;
-      
+      //mengecek orderItems
       if (items && Array.isArray(items) && items.length > 0) {
         // Hapus item lama
         await tx.orderItem.deleteMany({ where: { orderId } });

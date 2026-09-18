@@ -84,7 +84,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         order.id === orderId ? { ...order, status: nextStatus } : order
       )
     )
-    //  Kirim request PATCH ke endpoint backend Express
+    //  Kirim request PATCH ke endpoint backend
     try {
       const res = await api.patch(`/api/order/${orderId}/status`, {
         nextStatus,

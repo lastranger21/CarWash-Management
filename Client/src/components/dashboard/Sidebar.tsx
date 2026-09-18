@@ -31,7 +31,7 @@ export function Sidebar({ activeTab, setActiveTab, onOpenNewOrder, isAdmin,onOpe
     (item) => isAdmin || (item.id !== 'bay' && item.id !== 'services')
   )
   return (
-    <aside className="hidden w-64 flex-col border-r border-border bg-card p-4 lg:flex justify-between shrink-0">
+    <aside className="hidden w-64 flex-col border-r border-border bg-card p-4 lg:flex justify-between shrink-0 overflow-y-auto">
       <div>
         {/* Brand */}
         <div className="flex items-center gap-3 px-2 py-3 border-b border-border/60">

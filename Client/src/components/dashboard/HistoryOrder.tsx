@@ -35,7 +35,7 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
   const [payFilter, setPayFilter] = useState<'ALL' | 'PAID' | 'UNPAID'>('ALL')
   const [methodFilter, setMethodFilter] = useState<string>('ALL')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5 // Jumlah data per halaman
+  const itemsPerPage = 5 
 
   useEffect(() => {
     setCurrentPage(1)
@@ -46,7 +46,7 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
   // State Modal Detail Order
   const [detailOrder, setDetailOrder] = useState<OrderRecord | null>(null)
 
-  // 1. Kalkulasi Statistik Rekapitulasi
+  //  Kalkulasi Statistik Rekapitulasi
   const totalRevenue = orders
     .filter((o) => o.paymentStatus === 'PAID')
     .reduce((sum, o) => sum + o.total, 0)
@@ -54,7 +54,7 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
   const completedOrdersCount = orders.filter((o) => o.status === 'COMPLETED').length
   const unpaidOrdersCount = orders.filter((o) => o.paymentStatus === 'UNPAID').length
 
-  // 2. Filter Logika
+  //  Filter Order
   const filteredOrders = orders.filter((order) => {
     const term = searchTerm.toLowerCase()
     const matchesSearch =
@@ -108,7 +108,7 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
 
   return (
     <div className="space-y-6">
-      {/* 1. KARTU REKAPITULASI OMZET & TRANSAKSI */}
+      {/*  KARTU REKAPITULASI OMZET & TRANSAKSI */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="p-5 flex items-center justify-between">
@@ -162,7 +162,7 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
         </Card>
       </div>
 
-      {/* 2. FILTER & TABEL RIWAYAT ORDER */}
+      {/*  FILTER & TABEL RIWAYAT ORDER */}
       <Card>
         <CardHeader className="p-5 pb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -491,14 +491,14 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
         </CardContent>
       </Card>
 
-      {/* 3. MODAL CETAK ULANG STRUK */}
+      {/*  MODAL CETAK ULANG STRUK */}
       <ReceiptModal
         isOpen={!!selectedReceiptOrder}
         onClose={() => setSelectedReceiptOrder(null)}
         order={selectedReceiptOrder}
       />
 
-      {/* 4. MODAL DETAIL RINCIAN ORDER */}
+      {/*  MODAL DETAIL RINCIAN ORDER */}
       {detailOrder && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs p-4 sm:p-6 flex justify-center items-start">
           <div className="relative w-full max-w-lg my-8">
