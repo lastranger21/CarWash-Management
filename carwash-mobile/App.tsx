@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState,useEffect,useMemo } from 'react';
 import DetailCustomerScreen from './src/screens/DetailCustomerScreen';
 import useUserStore from './src/userStore';
+import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
 export type RootStackParamList = {
   Login: undefined
   MainApp:undefined;
@@ -21,7 +22,7 @@ export type RootStackParamList = {
 export type RootTabParamList = {
   HomeTab: undefined;
   Analytics: undefined
-  Activity: undefined;
+  Order: undefined;
   Customers: undefined;
 }
 
@@ -36,10 +37,10 @@ function BottomTabs(){
           if (route.name ==='HomeTab'){
             iconName=focused ?'home': 'home-outline'
           }else if(route.name ==='Analytics'){
-            iconName = focused? 'analytics':'analytics-outline'
+            iconName = focused? 'tv':'tv-outline'
           }
-          else if(route.name ==='Activity'){
-            iconName = focused? 'notifications-sharp':'notifications-outline'
+          else if(route.name ==='Order'){
+            iconName = focused? 'document-text-sharp':'document-text-outline'
           }
           else if(route.name ==='Customers'){
             iconName = focused? 'people':'people-outline'
@@ -49,12 +50,13 @@ function BottomTabs(){
         },
         tabBarActiveTintColor: '#080808',
         tabBarInactiveTintColor:'gray',
+        
       })}
       >
           
           <Tab.Screen name ="HomeTab" component={HomeScreen} options={{title:'Home'}} />
           <Tab.Screen name ="Analytics" component={CustomerScreen} options={{title:'Analytics'}} />
-          <Tab.Screen name ="Activity" component={CustomerScreen} options={{title:'Activity'}} />
+          <Tab.Screen name ="Order" component={OrderHistoryScreen} options={{title:'Order'}} />
           <Tab.Screen name ="Customers" component={CustomerScreen} options={{title:'Customers'}} />
     </Tab.Navigator>
   )

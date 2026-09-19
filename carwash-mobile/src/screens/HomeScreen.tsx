@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { AuthContext } from '../../App'
 import { useContext, useEffect, useState } from 'react'
 import * as SecureStore from 'expo-secure-store'
-
+import { CurvedBottomBarExpo } from 'react-native-curved-bottom-bar';
 export default function HomeScreen({navigation}:any){
     const{signOut} = useContext(AuthContext)
     //const username = useUserStore((state) => state.username);
