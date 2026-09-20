@@ -35,6 +35,21 @@ export default function(){
         await fetchCustomer()
         setIsRefreshing(false)
     }
+    const getNextStatus = (currentStatus: string) => {
+    switch (currentStatus) {
+      case 'RECEIVED':
+      case 'QUEUED':
+        return 'WASHING';
+      case 'WASHING':
+        return 'DRYING';
+      case 'DRYING':
+        return 'READY';
+      case 'READY':
+        return 'COMPLETED';
+      default:
+        return null;
+    }
+  };
     return (
         <View className='flex-1 bg-[#F9FAFB] px-4 pt-12'>
             <Text className='text-2xl font-bold text-[#1b1b24] mb-6'>List Customer</Text>
@@ -59,7 +74,7 @@ export default function(){
                     </Text>
                     <Text className="text-gray-500 text-sm">{item.phone}</Text>
                 </View>
-                {/* 2. Badge Status Membership */}
+                {/* Badge Status Membership */}
                 {isMember ? (
                     <View
                     className={`px-2.5 py-1 rounded-full border ${

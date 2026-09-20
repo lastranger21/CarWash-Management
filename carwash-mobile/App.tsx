@@ -14,6 +14,7 @@ import { useState,useEffect,useMemo } from 'react';
 import DetailCustomerScreen from './src/screens/DetailCustomerScreen';
 import useUserStore from './src/userStore';
 import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
+import BayMonitor from './src/screens/BayMonitor';
 export type RootStackParamList = {
   Login: undefined
   MainApp:undefined;
@@ -21,7 +22,7 @@ export type RootStackParamList = {
 }
 export type RootTabParamList = {
   HomeTab: undefined;
-  Analytics: undefined
+  BayMonitor: undefined
   Order: undefined;
   Customers: undefined;
 }
@@ -36,7 +37,7 @@ function BottomTabs(){
           let iconName: keyof typeof Ionicons.glyphMap ='home';
           if (route.name ==='HomeTab'){
             iconName=focused ?'home': 'home-outline'
-          }else if(route.name ==='Analytics'){
+          }else if(route.name ==='BayMonitor'){
             iconName = focused? 'tv':'tv-outline'
           }
           else if(route.name ==='Order'){
@@ -55,7 +56,7 @@ function BottomTabs(){
       >
           
           <Tab.Screen name ="HomeTab" component={HomeScreen} options={{title:'Home'}} />
-          <Tab.Screen name ="Analytics" component={CustomerScreen} options={{title:'Analytics'}} />
+          <Tab.Screen name ="BayMonitor" component={BayMonitor} options={{title:'Bay Monitor'}} />
           <Tab.Screen name ="Order" component={OrderHistoryScreen} options={{title:'Order'}} />
           <Tab.Screen name ="Customers" component={CustomerScreen} options={{title:'Customers'}} />
     </Tab.Navigator>
