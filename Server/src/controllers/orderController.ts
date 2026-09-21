@@ -239,6 +239,7 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
     const order = await prisma.order.findUnique({
       where: { id: Number(id) },
       include: {
+        bay: true,
         customer: {
           include: {
             membership: true,

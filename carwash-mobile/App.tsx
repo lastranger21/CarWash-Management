@@ -12,14 +12,22 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useState,useEffect,useMemo } from 'react';
 import DetailCustomerScreen from './src/screens/DetailCustomerScreen';
+import DetailOrderScreen from './src/screens/DetailOrderScreen';
 import useUserStore from './src/userStore';
 import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
 import BayMonitor from './src/screens/BayMonitor';
+import NewOrderScreen from './src/screens/NewOrderScreen';
+import EditOrderScreen from './src/screens/EditOrderScreen';
+import NewCustomerScreen from './src/screens/NewCustomerScreen';
 export type RootStackParamList = {
-  Login: undefined
-  MainApp:undefined;
-  DetailCustomer:{id:number, name:string};
-}
+  Login: undefined;
+  MainApp: undefined;
+  DetailCustomer: { id: number; name: string };
+  NewCustomer:undefined
+  DetailOrder: { id: number };
+  NewOrder: undefined;
+  EditOrder: { id: number };
+};
 export type RootTabParamList = {
   HomeTab: undefined;
   BayMonitor: undefined
@@ -117,13 +125,60 @@ const authContext = useMemo(()=> ({
       ):(
         <>
         <Stack.Screen name="MainApp" component={BottomTabs} options={{headerShown:false}}/>
-        <Stack.Screen name="DetailCustomer" 
-        
-        options={{
-          title:'Product Information',
-          headerStyle:{backgroundColor:'#2e7d32'},
-        headerTintColor:'#fff',headerTitleStyle:{fontWeight:'bold'}}}
-        component={DetailCustomerScreen}
+        <Stack.Screen
+          name="DetailCustomer"
+          options={{
+            title: 'Detail Pelanggan',
+            headerStyle: { backgroundColor: '#18181b' },
+            headerTintColor: '#ffffff',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: 'Kembali',
+          }}
+          component={DetailCustomerScreen}
+        />
+        <Stack.Screen
+          name="NewCustomer"
+          options={{
+            title: 'Daftar Customer Baru',
+            headerStyle: { backgroundColor: '#18181b' },
+            headerTintColor: '#ffffff',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: 'Kembali',
+          }}
+          component={NewCustomerScreen}
+        />
+        <Stack.Screen
+          name="DetailOrder"
+          options={{
+            title: 'Detail Pesanan',
+            headerStyle: { backgroundColor: '#18181b' },
+            headerTintColor: '#ffffff',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: 'Kembali',
+          }}
+          component={DetailOrderScreen}
+        />
+        <Stack.Screen
+          name="NewOrder"
+          options={{
+            title: 'Buat Pesanan Baru',
+            headerStyle: { backgroundColor: '#18181b' },
+            headerTintColor: '#ffffff',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: 'Kembali',
+          }}
+          component={NewOrderScreen}
+        />
+        <Stack.Screen
+          name="EditOrder"
+          options={{
+            title: 'Edit Pesanan',
+            headerStyle: { backgroundColor: '#18181b' },
+            headerTintColor: '#ffffff',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: 'Kembali',
+          }}
+          component={EditOrderScreen}
         />
         </>
         )}

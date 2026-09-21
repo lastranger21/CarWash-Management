@@ -4,7 +4,7 @@ import { api } from '../config/api'
 import * as SecureStore from 'expo-secure-store'
 import { Ionicons } from '@expo/vector-icons'
 
-export default function(){
+export default function OrderHistoryScreen({ navigation }: any) {
     const [orders, setOrders] = useState<any[]>([])
     const[isLoading,setIsLoading] =useState(true)
     const [isRefreshing,setIsRefreshing] =useState(false)
@@ -173,7 +173,11 @@ export default function(){
                 })
               : '-';
             return (
-              <View className="bg-white p-4 rounded-2xl mb-3 shadow-xs border border-gray-100">
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('DetailOrder', { id: item.id })}
+                className="bg-white p-4 rounded-2xl mb-3 shadow-xs border border-gray-100"
+              >
                 {/* Baris Atas: Kode Order & Waktu */}
                 <View className="flex-row justify-between items-center mb-2">
                   <Text className="text-xs font-bold text-gray-500 font-mono">
@@ -181,6 +185,7 @@ export default function(){
                   </Text>
                   <Text className="text-xs text-gray-400">{orderTime}</Text>
                 </View>
+
                 {/* Baris Tengah: Plat Nomor & Status Cuci */}
                 <View className="flex-row justify-between items-start mb-2">
                   <View>
@@ -199,6 +204,7 @@ export default function(){
                     </Text>
                   </View>
                 </View>
+
                 {/* Baris Bawah: Info Layanan & Total Biaya */}
                 <View className="flex-row justify-between items-center pt-2.5 mt-1 border-t border-gray-50">
                   <Text className="text-xs text-gray-500 truncate max-w-[55%]">
@@ -223,7 +229,7 @@ export default function(){
                     </View>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
         />

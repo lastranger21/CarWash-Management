@@ -8,7 +8,7 @@ export default function(){
     const [bay,setBay] = useState<any[]>([])
     const [isLoading,setIsLoading] = useState(true)
     const [isRefreshing,setIsRefreshing] =useState(false)
-
+    const [queuedOrders, setQueuedOrders] = useState<any[]>([])
     useEffect(()=>{
         fetchBay()
     },[])
@@ -21,6 +21,13 @@ export default function(){
                     Authorization: `Bearer ${token}`
                 }
             })
+            const orderRes = await api.get('/order?status=QUEUED', {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const unassigned = (orderRes.data?.data || []).filter(
+        (o: any) => !o.bayId && (o.status === 'QUEUED' || o.status === 'RECEIVED')
+      );
+            setQueuedOrders(unassigned);
             setBay(response.data.data)
             console.log('fetch data bay berhasil')
         } catch (error:any) {
@@ -82,9 +89,74 @@ export default function(){
         return { label: status, bg: 'bg-gray-100', text: 'text-gray-700' };
     }
   };
+    const handleAssignToBay = async (orderId: number) => {
+    // cari bilik kosong
+    const availableBay = bay.find(
+      (b) => b.status && (!b.orders || b.orders.length === 0)
+    );
+    if (!availableBay) {
+      Alert.alert('Bilik Penuh', 'Semua bilik cuci saat ini sedang terisi mobil!');
+      return;
+    }
+    try {
+      const token = await SecureStore.getItemAsync('userToken');
+      // Kirim status WASHING dan sertakan bayId tujuan
+      await api.patch(
+        `/order/${orderId}/status`,
+        {
+          nextStatus: 'WASHING',
+          bayId: availableBay.id,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      Alert.alert('Sukses', `Mobil berhasil masuk ke ${availableBay.name}`);
+      fetchBay(); // Refresh bay
+    } catch (error: any) {
+      Alert.alert('Gagal', error.response?.data?.message || 'Gagal memasukkan mobil ke bilik');
+    }
+  };
     return(
         <View className='flex-1 bg-[#f9fafb] px-4 pt-12'>
             <Text>Live Monitor Bay</Text>
+            {queuedOrders.length > 0 && (
+  <View className="bg-amber-50 p-4 rounded-2xl border border-amber-200 mb-4 shadow-xs">
+    <View className="flex-row justify-between items-center mb-2">
+      <View className="flex-row items-center gap-1.5">
+        <Ionicons name="time-outline" size={18} color="#b45309" />
+        <Text className="text-sm font-bold text-amber-900">
+          Antrean Menunggu ({queuedOrders.length} Mobil)
+        </Text>
+      </View>
+    </View>
+    {/* Daftar mobil antrean */}
+    {queuedOrders.map((order) => (
+      <View
+        key={order.id}
+        className="flex-row justify-between items-center bg-white p-3 rounded-xl border border-amber-100 mb-2"
+      >
+        <View>
+          <View className="bg-zinc-900 px-2 py-0.5 rounded self-start mb-1">
+            <Text className="text-xs font-bold text-white font-mono">
+              {order.vehiclePlate}
+            </Text>
+          </View>
+          <Text className="text-xs text-gray-700 font-medium">
+            {order.customer?.name || 'Pelanggan'}
+          </Text>
+        </View>
+        {/* Tombol aksi cepat: Masuk Bilik */}
+        <TouchableOpacity
+          onPress={() => handleAssignToBay(order.id)}
+          className="bg-amber-600 px-3 py-2 rounded-lg"
+        >
+          <Text className="text-xs font-bold text-white">+ Masuk Bay</Text>
+        </TouchableOpacity>
+      </View>
+    ))}
+  </View>
+)}
             <FlatList
             data={bay}
             keyExtractor={(bays)=> bays.id.toString()}

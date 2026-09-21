@@ -85,7 +85,15 @@ export const getCustomerById = async(req:Request,res:Response,next:NextFunction)
         const{id} = req.params
         const product = await prisma.customer.findUnique({
             where: {
-                id:Number(id)
+                id: Number(id)
+            },
+            include: {
+                membership: true,
+                vehicles: true,
+                orders: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 5
+                }
             }
         })
         if(!product){

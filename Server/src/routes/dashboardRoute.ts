@@ -7,6 +7,6 @@ import { authorizeRole } from '../middlewares/authorizeRole';
 const router = Router();
 
 // Endpoint dashboard diproteksi auth JWT (Staff & Admin)
-router.get('/summary', authentication,authorizeRole(["ADMIN"]), getDashboardSummary);
+router.get('/summary', authentication,authorizeRole(["ADMIN","STAFF"]), getDashboardSummary);
 
 export default router;

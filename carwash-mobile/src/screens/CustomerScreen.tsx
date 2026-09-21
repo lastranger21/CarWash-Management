@@ -1,15 +1,19 @@
-import {View,Text,FlatList,ActivityIndicator,Alert,Image} from 'react-native'
-import { useEffect,useState } from 'react'
+import {View,Text,FlatList,ActivityIndicator,Alert,Image,TouchableOpacity} from 'react-native'
+import { useEffect, useState, useCallback } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { api } from '../config/api'
 import * as SecureStore from 'expo-secure-store'
+import { Ionicons } from '@expo/vector-icons'
 
-export default function(){
+export default function CustomerScreen({ navigation }: any) {
     const [customers,setCustomers] = useState<any[]>([])
     const[isLoading,setIsLoading] =useState(true)
     const [isRefreshing,setIsRefreshing] =useState(false)
-    useEffect(()=> {
-        fetchCustomer()
-    },[])
+    useFocusEffect(
+      useCallback(() => {
+        fetchCustomer();
+      }, [])
+    );
     const fetchCustomer = async()=> {
         try {
             const token = await SecureStore.getItemAsync('userToken')
@@ -65,7 +69,11 @@ export default function(){
             const isMember = Boolean(item.membership);
             const isActive = item.membership?.isActive;
             return (
-            <View className="bg-white p-4 rounded-2xl mb-4 shadow-sm border border-gray-100">
+            <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('DetailCustomer', { id: item.id, name: item.name })}
+                className="bg-white p-4 rounded-2xl mb-4 shadow-sm border border-gray-100"
+            >
                 {/* Baris Atas: Nama di kiri, Badge Membership di kanan */}
                 <View className="flex-row justify-between items-start mb-2">
                 <View className="flex-1 mr-2">
@@ -108,10 +116,28 @@ export default function(){
                     {item.vehicles?.[0]?.plateNumber || item.vehicleplate || "-"}
                 </Text>
                 </View>
-            </View>
+            </TouchableOpacity>
   );
 }}
             />
+            <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('NewCustomer')}
+        style={{
+          position: 'absolute',
+          bottom: 24,
+          right: 20,
+          elevation: 6,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 6,
+        }}
+        className="bg-zinc-900 flex-row items-center px-5 py-3.5 rounded-full"
+      >
+        <Ionicons name="add" size={24} color="#ffffff" style={{ marginRight: 6 }} />
+        <Text className="text-white font-bold text-sm">Customer Baru</Text>
+      </TouchableOpacity>
         </View>
 
     )
