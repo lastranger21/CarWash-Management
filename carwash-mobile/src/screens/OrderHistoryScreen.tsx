@@ -1,12 +1,14 @@
 import {View,Text,FlatList,ActivityIndicator,Alert,Image,SafeAreaView, TextInput, TouchableOpacity} from 'react-native'
-import { useEffect,useState } from 'react'
+import { useContext, useEffect,useState } from 'react'
 import { api } from '../config/api'
 import * as SecureStore from 'expo-secure-store'
 import { Ionicons } from '@expo/vector-icons'
+import { AuthContext } from '../../App'
 
 export default function OrderHistoryScreen({ navigation }: any) {
     const [orders, setOrders] = useState<any[]>([])
     const[isLoading,setIsLoading] =useState(true)
+    const{userRole} = useContext(AuthContext)
     const [isRefreshing,setIsRefreshing] =useState(false)
     useEffect(()=> {
         fetchOrder()
@@ -47,8 +49,8 @@ export default function OrderHistoryScreen({ navigation }: any) {
       createdAt.getFullYear() === today.getFullYear() &&
       createdAt.getMonth() === today.getMonth() &&
       createdAt.getDate() === today.getDate()
-
-    if (!matchesSearch || !isToday) return false
+    
+    
 
     if (statusFilter === 'ACTIVE') {
       return ['RECEIVED', 'QUEUED', 'WASHING', 'DRYING'].includes(order.status)
@@ -62,6 +64,8 @@ export default function OrderHistoryScreen({ navigation }: any) {
     if (statusFilter === 'UNPAID') {
       return order.paymentStatus === 'UNPAID'
     }
+    if (userRole==='ADMIN') return true
+    if (!matchesSearch || !isToday) return false
     if (!order.createdAt) return true
     return true
     })
@@ -89,10 +93,20 @@ export default function OrderHistoryScreen({ navigation }: any) {
     return (
         <SafeAreaView className="flex-1 bg-[#F9FAFB]">
       <View className="px-4 pt-4 pb-2">
+         {userRole ==='ADMIN'?(
+          <>
+          <Text className="text-2xl font-bold text-[#1b1b24]">Riwayat Total</Text>
+        <Text className="text-sm text-gray-500 mt-0.5">
+          Daftar antrean & transaksi 
+        </Text>
+        </>
+        ):(
+          <>
         <Text className="text-2xl font-bold text-[#1b1b24]">Riwayat Hari Ini</Text>
         <Text className="text-sm text-gray-500 mt-0.5">
           Daftar antrean & transaksi cuci hari ini
-        </Text>
+        </Text></>)}
+        
         {/* Input Search */}
         <View className="flex-row items-center bg-white border border-gray-200 rounded-xl px-3 py-2 mt-4 shadow-xs">
           <Ionicons name="search-outline" size={18} color="#9ca3af" />

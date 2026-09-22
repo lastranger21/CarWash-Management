@@ -21,7 +21,7 @@ export default function LoginScreen({ navigation }: any) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn,username } = useContext(AuthContext);
+  const { signIn, username, setUserRole } = useContext(AuthContext);
   const setUsername = useUserStore((state) => state.setUsername);
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -40,8 +40,8 @@ export default function LoginScreen({ navigation }: any) {
       const data= response.data.user
       if (token) {
         signIn(token);
-        username(data.name)
-        
+        username(data.name);
+        setUserRole(data.role);
       } else {
         Alert.alert("Login Gagal", "Token tidak ditemukan dalam respon server.");
       }
@@ -76,7 +76,7 @@ export default function LoginScreen({ navigation }: any) {
             {/* Logo Badge */}
             <View className="items-center mb-3">
               <View className="w-14 h-14 rounded-2xl bg-zinc-900 items-center justify-center shadow-md shadow-zinc-900/20">
-                <Ionicons name="car-sport" size={28} color="#ffffff" />
+                <Ionicons name="car" size={28} color="#ffffff" />
               </View>
             </View>
 

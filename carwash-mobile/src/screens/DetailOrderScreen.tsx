@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,10 @@ export default function DetailOrderScreen({ route, navigation }: any) {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'CASH' | 'TRANSFER' | 'QRIS'>('CASH');
   const [isPaying, setIsPaying] = useState(false);
+  const [cashReceived, setCashReceived] = useState('')
+  const numericCash = Number(cashReceived.replace(/[^0-9]/g, '')) || 0;
+  const changeAmount = numericCash - (order?.total || 0);
+  const isCashEnough = selectedMethod !== 'CASH' || (numericCash >= (order?.total || 0) && numericCash > 0);
 
   useFocusEffect(
     useCallback(() => {
@@ -100,8 +105,12 @@ export default function DetailOrderScreen({ route, navigation }: any) {
     }
   };
 
-  // 2. Fungsi Proses Pembayaran
+  // Fungsi Proses Pembayaran
   const handleProcessPayment = async () => {
+    if (selectedMethod === 'CASH' && numericCash < order.total) {
+      Alert.alert('Uang Kurang', 'Nominal uang yang diterima kurang dari total tagihan!');
+      return;
+    }
     try {
       setIsPaying(true);
       const token = await SecureStore.getItemAsync('userToken');
@@ -117,6 +126,7 @@ export default function DetailOrderScreen({ route, navigation }: any) {
 
       Alert.alert('Sukses', 'Pembayaran berhasil dicatat!');
       setIsPaymentModalOpen(false);
+      setCashReceived('');
       fetchOrder();
     } catch (error: any) {
       console.log('Payment error:', error);
@@ -333,7 +343,7 @@ export default function DetailOrderScreen({ route, navigation }: any) {
           </View>
         </View>
 
-        {/* 3. RINCIAN LAYANAN (ORDER ITEMS) */}
+        {/*  RINCIAN LAYANAN (ORDER ITEMS) */}
         <View className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs mb-4">
           <View className="flex-row items-center gap-2 mb-3">
             <Ionicons name="water-outline" size={18} color="#18181b" />
@@ -397,9 +407,9 @@ export default function DetailOrderScreen({ route, navigation }: any) {
 
           {discountAmount > 0 && (
             <View className="flex-row justify-between mb-1.5">
-              <Text className="text-xs text-emerald-600">Diskon Member ({order.discount}%)</Text>
+              <Text className="text-xs text-emerald-600">Diskon Member (10%)</Text>
               <Text className="text-xs text-emerald-600 font-bold">
-                - Rp {discountAmount.toLocaleString('id-ID')}
+                - Rp {order.discount.toLocaleString('id-ID')}
               </Text>
             </View>
           )}
@@ -488,7 +498,82 @@ export default function DetailOrderScreen({ route, navigation }: any) {
                 </TouchableOpacity>
               ))}
             </View>
-
+               {selectedMethod === 'CASH' && (
+              <View className="mb-4">
+                <Text className="text-xs font-semibold text-gray-700 mb-1.5">
+                  Uang Diterima dari Pelanggan
+                </Text>
+                {/* Input Text Uang */}
+                <View className="flex-row items-center border border-gray-200 rounded-xl px-3.5 py-2 bg-zinc-50 mb-2">
+                  <Text className="text-sm font-bold text-gray-500 mr-2">Rp</Text>
+                  <TextInput
+                    keyboardType="number-pad"
+                    placeholder="0"
+                    placeholderTextColor="#9ca3af"
+                    value={cashReceived ? Number(cashReceived).toLocaleString('id-ID') : ''}
+                    onChangeText={(val) => setCashReceived(val.replace(/[^0-9]/g, ''))}
+                    className="flex-1 text-base font-bold text-gray-900"
+                  />
+                  {cashReceived.length > 0 && (
+                    <TouchableOpacity onPress={() => setCashReceived('')}>
+                      <Ionicons name="close-circle" size={18} color="#9ca3af" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {/* Quick Chips: Uang Pas & Pecahan Umum */}
+                <View className="flex-row flex-wrap gap-1.5 mb-2.5">
+                  <TouchableOpacity
+                    onPress={() => setCashReceived(String(order.total || 0))}
+                    className="px-2.5 py-1 rounded-lg bg-zinc-200 border border-zinc-300"
+                  >
+                    <Text className="text-[11px] font-bold text-zinc-800">Uang Pas</Text>
+                  </TouchableOpacity>
+                  {[50000, 100000, 150000, 200000].map((nominal) => {
+                    if (nominal >= (order.total || 0)) {
+                      return (
+                        <TouchableOpacity
+                          key={nominal}
+                          onPress={() => setCashReceived(String(nominal))}
+                          className="px-2.5 py-1 rounded-lg bg-zinc-100 border border-zinc-200"
+                        >
+                          <Text className="text-[11px] font-semibold text-zinc-700">
+                            Rp {nominal.toLocaleString('id-ID')}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    }
+                    return null;
+                  })}
+                </View>
+                {/* Kotak Info Kembalian / Uang Kurang */}
+                {numericCash > 0 && (
+                  <View
+                    className={`p-3 rounded-xl border ${
+                      changeAmount >= 0
+                        ? 'bg-emerald-50 border-emerald-200'
+                        : 'bg-rose-50 border-rose-200'
+                    }`}
+                  >
+                    <View className="flex-row justify-between items-center">
+                      <Text
+                        className={`text-xs font-semibold ${
+                          changeAmount >= 0 ? 'text-emerald-800' : 'text-rose-800'
+                        }`}
+                      >
+                        {changeAmount >= 0 ? 'Kembalian' : 'Uang Kurang'}
+                      </Text>
+                      <Text
+                        className={`text-sm font-black ${
+                          changeAmount >= 0 ? 'text-emerald-700' : 'text-rose-600'
+                        }`}
+                      >
+                        Rp {Math.abs(changeAmount).toLocaleString('id-ID')}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
             <View className="flex-row gap-2">
               <TouchableOpacity
                 onPress={() => setIsPaymentModalOpen(false)}
@@ -499,8 +584,10 @@ export default function DetailOrderScreen({ route, navigation }: any) {
 
               <TouchableOpacity
                 onPress={handleProcessPayment}
-                disabled={isPaying}
-                className="flex-1 py-3 rounded-xl bg-emerald-600 items-center justify-center"
+                disabled={isPaying || !isCashEnough} // Terkunci jika uang kurang
+                className={`flex-1 py-3 rounded-xl items-center justify-center ${
+                  isCashEnough ? 'bg-emerald-600' : 'bg-gray-300'
+                }`}
               >
                 {isPaying ? (
                   <ActivityIndicator size="small" color="#fff" />

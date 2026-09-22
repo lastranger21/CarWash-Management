@@ -7,18 +7,22 @@ import * as SecureStore from 'expo-secure-store'
 import { CurvedBottomBarExpo } from 'react-native-curved-bottom-bar';
 import { api } from '../config/api'
 import { useFocusEffect } from '@react-navigation/native'
-
-export default function HomeScreen({navigation}:any){
+export default function AdminHomeScreen({navigation}:any){
     const{signOut} = useContext(AuthContext)
     //const username = useUserStore((state) => state.username);
     const [username,setUsername] = useState('')
     const [dashboard,setDashboard] = useState<any>([])
+    /*useEffect(()=> {
+        fetchUser()
+        fetchDashboard()
+    },[])*/
+    //focusEffect agar autoupdate ketika home ditekan
     useFocusEffect(
-            useCallback(() => {
-             fetchUser()
-             fetchDashboard();
-            }, [])
-          );
+        useCallback(() => {
+         fetchUser()
+         fetchDashboard();
+        }, [])
+      );
     const fetchUser = async()=> {
         try {
             const nama =await SecureStore.getItemAsync('username')
@@ -77,8 +81,8 @@ return(
                         <Text className='text-[11px] font-bold text-[#10b981] ml-1'>2.4%</Text>
                     </View>
                 </View>
-                <Text className='text-[24px] font-bold text-[#64748b] mb-1'>{(dashboard?.metrics?.unpaid)}</Text>
-                <Text className='text-[12px] font-bold text-[#575e72] uppercase tracking wider'>Order Belum Terbayar </Text>
+                <Text className='text-[24px] font-bold text-[#64748b] mb-1'>Rp.{(dashboard?.metrics?.todayRevenue||0).toLocaleString('id-ID')}</Text>
+                <Text className='text-[12px] font-bold text-[#575e72] uppercase tracking wider'>Penghasilan Hari ini</Text>
         </View>
         <View className='bg-white rounded-2xl p-4 shadow-sm w-[48%] mb-4 border border-gray-50'>
                 <View className='flex-row justify-between items-start mb-4'>
