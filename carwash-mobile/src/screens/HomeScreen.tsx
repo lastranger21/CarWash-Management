@@ -1,18 +1,41 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'
-import {View,Text,Image, TouchableOpacity} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import {View,Text,Image, TouchableOpacity,Modal,TouchableWithoutFeedback} from 'react-native'
 import { AuthContext } from '../../App'
 import { useCallback, useContext, useEffect, useState } from 'react'
 import * as SecureStore from 'expo-secure-store'
 import { CurvedBottomBarExpo } from 'react-native-curved-bottom-bar';
 import { api } from '../config/api'
 import { useFocusEffect } from '@react-navigation/native'
-
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useLayoutEffect } from 'react'
 export default function HomeScreen({navigation}:any){
     const{signOut} = useContext(AuthContext)
-    //const username = useUserStore((state) => state.username);
+    
     const [username,setUsername] = useState('')
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [dashboard,setDashboard] = useState<any>([])
+    const insets = useSafeAreaInsets()
+    useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => setIsProfileMenuOpen(true)}
+          style={{ marginRight: 16 }}
+          className="w-9 h-9 rounded-full border border-gray-200 overflow-hidden shadow-xs"
+        >
+          <Image
+            source={{
+              uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRm3rLggSDwIEV6XsEMSBZ6NB639QOOvUgZYlW5EhKu2kv1Vj0to9ttZiDf&s=10',
+            }}
+            className="w-full h-full"
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
     useFocusEffect(
             useCallback(() => {
              fetchUser()
@@ -49,24 +72,54 @@ export default function HomeScreen({navigation}:any){
   }
 return(
     <SafeAreaView className='flex-1 bg-white'>
-        <View className='flex-row justify-between items-center px-4 pb-8'>
-            <View>
-                <Text className='text-[24px] font-bold text-[#1b1b24] tracking-light'>Hello,{username}</Text>
-                <Text className='text-[14px] text-[#575e72] mt-1'>{todayFormatted}</Text>
+        <View className="px-4 pb-6 pt-2">
+        <Text className="text-[24px] font-bold text-[#1b1b24] tracking-tight">
+          Hello, {username}
+        </Text>
+        <Text className="text-[14px] text-[#575e72] mt-0.5">{todayFormatted}</Text>
+      </View>
+      <Modal
+          visible={isProfileMenuOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsProfileMenuOpen(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setIsProfileMenuOpen(false)}>
+            <View className="flex-1 bg-black/10">
+              <View
+                style={{
+                  position: 'absolute',
+                  top: insets.top + 45, // Otomatis pas tepat di bawah avatar navbar
+                  right: 16,
+                  elevation: 10,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 8,
+                }}
+                className="bg-white rounded-2xl p-2 border border-gray-100 min-w-[170px]"
+              >
+                <View className="px-3 py-2 border-b border-gray-100">
+                  <Text className="text-xs font-bold text-gray-900" numberOfLines={1}>
+                    {username}
+                  </Text>
+                  <Text className="text-[10px] text-gray-400">Akun Terhubung</Text>
+                </View>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setIsProfileMenuOpen(false);
+                    signOut();
+                  }}
+                  className="flex-row items-center gap-2 px-3 py-2.5 rounded-xl active:bg-rose-50 mt-1"
+                >
+                  <MaterialIcons name="logout" size={16} color="#e11d48" />
+                  <Text className="text-xs font-bold text-rose-600">Keluar (Logout)</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-
-            <TouchableOpacity onPress={signOut}>
-                <MaterialIcons name='logout' />
-            </TouchableOpacity>
-            <View className='w-11 h-11 rounded-full shadow-sm overflow-hidden'>
-                <Image 
-                   source = {{uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRm3rLggSDwIEV6XsEMSBZ6NB639QOOvUgZYlW5EhKu2kv1Vj0to9ttZiDf&s=10'}} 
-                   className='w-full h-full' 
-                   resizeMode='cover'
-                    />
-            </View>
-            
-        </View>
+          </TouchableWithoutFeedback>
+        </Modal>
         <View className='flex-row flex-wrap justify-between px-4'>
 
         <View className='bg-white rounded-2xl p-4 shadow-sm w-[48%] mb-4 border border-gray-50'>

@@ -10,8 +10,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem(STORAGE_KEY)
+      const token = localStorage.getItem('token')
       if (savedUser) {
         setUser(JSON.parse(savedUser))
+      }
+       if (token) {
+        // Decode payload JWT secara mandiri tanpa library luar
+        const base64Url = token.split('.')[1]
+        if (base64Url) {
+          const payload = JSON.parse(atob(base64Url))
+          const currentTime = Math.floor(Date.now() / 1000)
+          // Jika waktu sekarang sudah melewati waktu exp token
+          if (payload.exp && payload.exp < currentTime) {
+            console.warn('JWT telah kedaluwarsa.')
+            localStorage.removeItem('token')
+            localStorage.removeItem(STORAGE_KEY)
+            setUser(null)
+            setIsLoading(false)
+            return
+          }
+        }
+      }
+      if (savedUser && token) {
+        setUser(JSON.parse(savedUser))
+      } else {
+        setUser(null)
       }
     } catch (error) {
       console.error('Gagal membaca sesi user:', error)

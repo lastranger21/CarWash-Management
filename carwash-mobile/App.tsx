@@ -13,13 +13,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState,useEffect,useMemo } from 'react';
 import DetailCustomerScreen from './src/screens/DetailCustomerScreen';
 import DetailOrderScreen from './src/screens/DetailOrderScreen';
-
 import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
 import BayMonitor from './src/screens/BayMonitor';
 import NewOrderScreen from './src/screens/NewOrderScreen';
 import EditOrderScreen from './src/screens/EditOrderScreen';
 import NewCustomerScreen from './src/screens/NewCustomerScreen';
 import AdminHomeScreen from './src/screens/AdminHomeScreen';
+import { api, setupAxiosInterceptor } from './src/config/api';
+import { Alert } from 'react-native';
+
 export type RootStackParamList = {
   Login: undefined;
   MainApp: undefined;
@@ -82,6 +84,27 @@ export default function App() {
   const [isLoading,setIsLoading] = useState(true)
   const [userToken, setUserToken] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>('');
+
+  useEffect(() => {
+    setupAxiosInterceptor(() => {
+      Alert.alert(
+        'Sesi Berakhir',
+        'Sesi login Anda telah habis. Silakan masuk kembali.',
+        [
+          {
+            text: 'OK',
+            onPress: async () => {
+              await SecureStore.deleteItemAsync('userToken');
+              await SecureStore.deleteItemAsync('userRole');
+              await SecureStore.deleteItemAsync('username');
+              setUserToken(null);
+              setUserRole('');
+            },
+          },
+        ]
+      );
+    });
+  }, []);
   useEffect(() => {
     const checkToken = async () => {
       try {
