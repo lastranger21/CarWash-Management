@@ -153,6 +153,7 @@ export default function NewOrderScreen({ navigation }: any) {
       Alert.alert('Peringatan', 'Plat nomor kendaraan wajib diisi!');
       return;
     }
+    
 
     const orderItems = Object.entries(quantities)
       .filter(([_, qty]) => qty > 0)
@@ -378,7 +379,7 @@ export default function NewOrderScreen({ navigation }: any) {
                   )}
                 </View>
 
-                {qty > 1 && (
+                {qty >= 1 && (
                   <View className="pt-2 mt-2 border-t border-gray-100 flex-row justify-between">
                     <Text className="text-[11px] text-gray-400">Subtotal Layanan:</Text>
                     <Text className="text-xs font-bold text-zinc-900">

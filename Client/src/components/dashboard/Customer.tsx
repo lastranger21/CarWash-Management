@@ -4,6 +4,7 @@ import {
   Award,
   Search,
   Plus,
+  Pencil,
   Phone,
   Calendar,
   ExternalLink,
@@ -19,7 +20,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { useCustomer } from '@/hooks/useCustomer'
 import type { CustomerItem } from '@/types/customer'
-
+import { EditCustomer } from './EditCustomer'
 
 
 
@@ -27,7 +28,7 @@ export function CustomerPage() {
   const { customers, addCustomer, toggleMembership } = useCustomer()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE_MEMBER' | 'REGULAR' | 'INACTIVE_MEMBER'>('ALL')
-  
+  const [editingCustomer, setEditingCustomer] = useState<CustomerItem | null>(null)
   // State Modal Tambah Customer / Member Baru
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [newName, setNewName] = useState('')
@@ -96,7 +97,7 @@ export function CustomerPage() {
                 Total Pelanggan
               </p>
               <h3 className="text-2xl font-bold mt-1 tracking-tight">{totalCustomers} Orang</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Database CRM Car Wash</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Pelanggan Saat Ini</p>
             </div>
             <div className="rounded-xl p-3 bg-blue-500/10 text-blue-600 dark:text-blue-400">
               <Users className="size-6" />
@@ -342,13 +343,13 @@ export function CustomerPage() {
                       </td>
 
                       {/* Tombol Aksi */}
-                      <td className="px-5 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {/* Tombol Toggle Membership */}
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                        <div className="inline-flex items-center justify-center gap-1.5">
+                          {/*Tombol Membership (Lebar tetap agar simetris di tiap baris) */}
                           <Button
                             size="xs"
                             variant={cust.membership?.isActive ? 'outline' : 'default'}
-                            className={`text-xs font-semibold ${
+                            className={`w-22 justify-center text-[11px] font-semibold transition-all shadow-2xs ${
                               !cust.membership
                                 ? 'bg-purple-600 hover:bg-purple-700 text-white'
                                 : cust.membership.isActive
@@ -356,22 +357,41 @@ export function CustomerPage() {
                                 : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                             }`}
                             onClick={() => handleToggleMembership(cust.id)}
+                            title={
+                              !cust.membership
+                                ? 'Daftarkan sebagai Member'
+                                : cust.membership.isActive
+                                ? 'Nonaktifkan status Member'
+                                : 'Aktifkan kembali Member'
+                            }
                           >
                             {!cust.membership
-                              ? '+ Jadikan Member'
+                              ? '+ Member'
                               : cust.membership.isActive
-                              ? 'Nonaktifkan'
-                              : 'Aktifkan Kembali'}
+                              ? 'Nonaktif'
+                              : 'Aktifkan'}
                           </Button>
 
-                          {/* Tombol Lihat Detail / Riwayat */}
+                          {/*  Tombol Edit Pelanggan & Kendaraan */}
                           <Button
                             size="icon-xs"
-                            variant="ghost"
-                            title="Lihat Profil & Riwayat"
-                            onClick={() => setSelectedCustomer(cust )}
+                            variant="outline"
+                            className="hover:border-primary hover:bg-primary/10 hover:text-primary transition-colors"
+                            title="Edit Pelanggan & Kendaraan"
+                            onClick={() => setEditingCustomer(cust)}
                           >
-                            <History className="size-3.5 text-muted-foreground" />
+                            <Pencil className="size-3.5" />
+                          </Button>
+
+                          {/*  Tombol Lihat Detail / Riwayat */}
+                          <Button
+                            size="icon-xs"
+                            variant="outline"
+                            className="hover:bg-muted hover:text-foreground transition-colors"
+                            title="Lihat Profil & Riwayat Cuci"
+                            onClick={() => setSelectedCustomer(cust)}
+                          >
+                            <History className="size-3.5" />
                           </Button>
                         </div>
                       </td>
@@ -477,7 +497,7 @@ export function CustomerPage() {
         </div>
       )}
 
-      {/* 4. MODAL DETAIL PROFIL & KARTU DIGITAL MEMBER */}
+      {/*  MODAL DETAIL PROFIL & KARTU DIGITAL MEMBER */}
       {selectedCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
           <div className="relative w-full max-w-md">
@@ -557,7 +577,11 @@ export function CustomerPage() {
                   </div>
                 </div>
               </CardContent>
-
+                 <EditCustomer
+    isOpen={!!editingCustomer}
+    onClose={() => setEditingCustomer(null)}
+    customer={editingCustomer}
+  />
               <div className="flex justify-end p-4 border-t border-border/60">
                 <Button size="sm" variant="outline" onClick={() => setSelectedCustomer(null)}>
                   Tutup

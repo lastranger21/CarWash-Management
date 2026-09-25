@@ -1,6 +1,5 @@
-// file: Client/src/components/dashboard/EditOrderModal.tsx
 import { useState, useEffect } from 'react'
-import { X, Pencil, Car, Sparkles, Plus, Minus } from 'lucide-react'
+import { X, Pencil, Sparkles, Plus, Minus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'

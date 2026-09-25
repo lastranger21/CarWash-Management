@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState,useEffect,useMemo } from 'react';
 import DetailCustomerScreen from './src/screens/DetailCustomerScreen';
 import DetailOrderScreen from './src/screens/DetailOrderScreen';
-import useUserStore from './src/userStore';
+
 import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
 import BayMonitor from './src/screens/BayMonitor';
 import NewOrderScreen from './src/screens/NewOrderScreen';

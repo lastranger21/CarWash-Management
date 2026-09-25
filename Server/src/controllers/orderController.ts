@@ -8,7 +8,21 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     const { customerId, vehiclePlate, vehicleModel, items } = req.body;
     
     const normalizedPlate = vehiclePlate.toUpperCase().trim();
+
     const staffId = (req as any).user.id; // Dari middleware auth JWT
+    const activeOrder = await prisma.order.findFirst({
+      where: {
+        vehiclePlate: normalizedPlate,
+        status: {
+          notIn: ['COMPLETED', 'CANCELLED'], 
+        },
+      },
+    });
+    if (activeOrder) {
+      return res.status(400).json({
+        message: `Mobil plat ${normalizedPlate} masih dalam proses (${activeOrder.status}) di antrean ${activeOrder.orderCode}!`,
+      });
+    }
     // Cek Customer & Membership
     const customer = await prisma.customer.findUnique({
       where: { id: Number(customerId) },

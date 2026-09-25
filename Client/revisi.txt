@@ -1,0 +1,3 @@
+bagian keuangan jangan ditampilkan ke staff(V)
+customer bisa diedit(v)
+nama customer di atas bagian newOrder(v)

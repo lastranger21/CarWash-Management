@@ -7,6 +7,8 @@ import {
   Clock,
   FileText,
   Eye,
+  CreditCard,
+  Pencil,
   X,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
@@ -25,6 +27,9 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { useState, useEffect } from 'react'
+import { useOrder } from '@/hooks/useOrder'
+import { PaymentModal } from './PaymentModal'
+import { EditOrderModal } from './EditOrderModal'
 interface OrderHistoryPageProps {
   orders: OrderRecord[]
 }
@@ -35,8 +40,11 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
   const [payFilter, setPayFilter] = useState<'ALL' | 'PAID' | 'UNPAID'>('ALL')
   const [methodFilter, setMethodFilter] = useState<string>('ALL')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5 
-
+  const itemsPerPage = 5
+  const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<OrderRecord | null>(null)
+  const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<OrderRecord | null>(null)
+  const {updateOrderStatus,confirmPayment } = useOrder()
+  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<OrderRecord | null>(null)
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, statusFilter, payFilter, methodFilter])
@@ -385,28 +393,48 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
 
                       {/* Aksi */}
                       <td className="px-5 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {/* Tombol Cetak Ulang Struk */}
-                          <Button
-                            size="icon-xs"
-                            variant="outline"
-                            title="Cetak Ulang Struk"
-                            onClick={() => setSelectedReceiptOrder(order)}
-                          >
-                            <Printer className="size-3.5 text-muted-foreground" />
-                          </Button>
-
-                          {/* Tombol Detail Riwayat */}
-                          <Button
-                            size="icon-xs"
-                            variant="ghost"
-                            title="Lihat Detail Transaksi"
-                            onClick={() => setDetailOrder(order)}
-                          >
-                            <Eye className="size-3.5 text-muted-foreground" />
-                          </Button>
-                        </div>
-                      </td>
+                                            <div className="flex items-center justify-center gap-1.5">
+                                              {order.paymentStatus === 'UNPAID' && (
+                                                <Button
+                                                  size="xs"
+                                                  variant="outline"
+                                                  className="text-[11px] border-emerald-500/40 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-semibold"
+                                                  onClick={() => setSelectedOrderForPayment(order)}
+                                                >
+                                                  <CreditCard className="size-3" />
+                                                  Bayar
+                                                </Button>
+                                              )}
+                                              {order.status !== 'COMPLETED' && (
+                                                        <Button
+                                                              size="icon-xs"
+                                                              variant="ghost"
+                                                              title="Edit Order"
+                                                              onClick={() => setSelectedOrderForEdit(order)}
+                                                        >
+                                                          <Pencil className="size-3.5 text-muted-foreground hover:text-foreground" />
+                                                        </Button>
+                                              )}
+                                              {order.status === 'READY' && (
+                                                <Button
+                                                  size="xs"
+                                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px]"
+                                                  onClick={() => updateOrderStatus(order.id, 'COMPLETED')}
+                                                >
+                                                  Selesai & Keluar
+                                                </Button>
+                                              )}
+                      
+                                              <Button
+                                                size="icon-xs"
+                                                variant="ghost"
+                                                title="Cetak Struk"
+                                                onClick={() => setSelectedOrderForReceipt(order)}
+                                              >
+                                                <Printer className="size-3.5 text-muted-foreground" />
+                                              </Button>
+                                            </div>
+                                          </td>
                     </tr>
                   ))
                 )}
@@ -490,13 +518,35 @@ export function OrderHistoryPage({ orders }: OrderHistoryPageProps) {
         
         </CardContent>
       </Card>
-
+      <PaymentModal
+              isOpen={!!selectedOrderForPayment}
+              onClose={() => setSelectedOrderForPayment(null)}
+              order={selectedOrderForPayment}
+              onConfirmPayment={(orderId, method, cashReceived, change) => {
+                confirmPayment(orderId, method, cashReceived, change)
+                const target = orders.find((o) => o.id === orderId)
+                if (target) {
+                  setSelectedOrderForReceipt({
+                    ...target,
+                    paymentStatus: 'PAID',
+                    paymentMethod: method,
+                    cashReceived,
+                    change,
+                  })
+                }
+              }}
+            />      
       {/*  MODAL CETAK ULANG STRUK */}
       <ReceiptModal
         isOpen={!!selectedReceiptOrder}
         onClose={() => setSelectedReceiptOrder(null)}
         order={selectedReceiptOrder}
       />
+      <EditOrderModal
+              isOpen={!!selectedOrderForEdit}
+              onClose={() => setSelectedOrderForEdit(null)}
+              order={selectedOrderForEdit}
+            />
 
       {/*  MODAL DETAIL RINCIAN ORDER */}
       {detailOrder && (

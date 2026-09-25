@@ -227,12 +227,32 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   }
 
   // Update Customer
-  const updateCustomer = async (id: number, data: { name: string; phone: string }): Promise<boolean> => {
-    setCustomers((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, name: data.name, phone: data.phone } : c))
-    )
+  const updateCustomer = async (
+    id: number,
+    data: { name: string; phone: string; newVehicle?: { plateNumber: string; modelName?: string } }
+  ): Promise<boolean> => {
     try {
-      await api.put(`/api/customers/${id}`, data)
+      const res = await api.put(`/api/customers/${id}`, data)
+      const updated = res.data?.data
+      setCustomers((prev) =>
+        prev.map((c) => {
+          if (c.id !== id) return c
+          return {
+            ...c,
+            name: data.name,
+            phone: data.phone,
+            vehicles: updated?.vehicles || (data.newVehicle ? [
+              ...(c.vehicles || []),
+              {
+                id: Date.now(),
+                plateNumber: data.newVehicle.plateNumber.toUpperCase().trim(),
+                modelName: data.newVehicle.modelName || 'Mobil Standar',
+              }
+            ] : c.vehicles),
+            frequentPlate: updated?.vehicles?.[0]?.plateNumber || c.frequentPlate
+          }
+        })
+      )
       return true
     } catch (error) {
       console.error(`Gagal update customer ${id} di backend:`, error)

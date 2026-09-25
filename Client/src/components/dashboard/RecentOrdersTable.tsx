@@ -115,7 +115,7 @@ export function RecentOrdersTable() {
                 : 'bg-muted/60 text-muted-foreground hover:bg-muted'
             }`}
           >
-            Semua ({orders.length})
+            Semua ({filteredOrders.length})
           </button>
           <button
             onClick={() => setStatusFilter('ACTIVE')}
@@ -125,7 +125,7 @@ export function RecentOrdersTable() {
                 : 'bg-muted/60 text-muted-foreground hover:bg-muted'
             }`}
           >
-            Sedang Proses ({orders.filter((o) => ['RECEIVED', 'QUEUED', 'WASHING', 'DRYING'].includes(o.status)).length})
+            Sedang Proses ({filteredOrders.filter((o) => ['RECEIVED', 'QUEUED', 'WASHING', 'DRYING'].includes(o.status)).length})
           </button>
           <button
             onClick={() => setStatusFilter('READY')}
@@ -135,7 +135,7 @@ export function RecentOrdersTable() {
                 : 'bg-muted/60 text-muted-foreground hover:bg-muted'
             }`}
           >
-            Siap Ambil ({orders.filter((o) => o.status === 'READY').length})
+            Siap Ambil ({filteredOrders.filter((o) => o.status === 'READY').length})
           </button>
           <button
             onClick={() => setStatusFilter('UNPAID')}
@@ -145,7 +145,7 @@ export function RecentOrdersTable() {
                 : 'bg-muted/60 text-muted-foreground hover:bg-muted'
             }`}
           >
-            Belum Lunas ({orders.filter((o) => o.paymentStatus === 'UNPAID').length})
+            Belum Lunas ({filteredOrders.filter((o) => o.paymentStatus === 'UNPAID').length})
           </button>
           <button
             onClick={() => setStatusFilter('COMPLETED')}
@@ -155,7 +155,7 @@ export function RecentOrdersTable() {
                 : 'bg-muted/60 text-muted-foreground hover:bg-muted'
             }`}
           >
-            Selesai ({orders.filter((o) => o.status === 'COMPLETED').length})
+            Selesai ({filteredOrders.filter((o) => o.status === 'COMPLETED').length})
           </button>
         </div>
       </CardHeader>

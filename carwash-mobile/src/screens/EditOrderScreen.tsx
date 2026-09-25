@@ -23,7 +23,7 @@ export default function EditOrderScreen({ route, navigation }: any) {
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [quantities, setQuantities] = useState<Record<number, number>>({});
   useEffect(() => {
     fetchInitialData();
   }, [id]);
@@ -48,7 +48,15 @@ export default function EditOrderScreen({ route, navigation }: any) {
         navigation.goBack();
         return;
       }
-
+      const initialQuantities: Record<number, number> = {};
+      (orderData.orderItems || []).forEach((item: any) => {
+        const serviceId = item.serviceId || item.service?.id;
+        if (serviceId) {
+          initialQuantities[serviceId] = item.quantity || 1;
+        }
+      });
+      
+      setQuantities(initialQuantities);
       setOrder(orderData);
       setServices(servicesData);
       setVehiclePlate(orderData.vehiclePlate || '');
@@ -94,27 +102,53 @@ export default function EditOrderScreen({ route, navigation }: any) {
     }
   };
 
+  const handleIncrement = (serviceId: number) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [serviceId]: (prev[serviceId] || 0) + 1,
+    }));
+  };
+
+  const handleDecrement = (serviceId: number) => {
+    setQuantities((prev) => {
+      const currentQty = prev[serviceId] || 0;
+      if (currentQty <= 1) {
+        const next = { ...prev };
+        delete next[serviceId];
+        return next;
+      }
+      return { ...prev, [serviceId]: currentQty - 1 };
+    });
+  };
   // Kalkulasi subtotal dan diskon
   const isMember = Boolean(order?.customer?.membership?.isActive);
   const discountPercent = isMember
     ? Number(order?.customer?.membership?.discountPercent) || 10
     : 0;
 
-  const subtotal = services
-    .filter((s) => selectedServices.includes(s.id))
-    .reduce((acc, curr) => acc + curr.price, 0);
-
+  const subtotal = services.reduce((acc, curr) => {
+    const qty = quantities[curr.id] || 0;
+    return acc + curr.price * qty;
+  }, 0);
+  
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
+  
   const total = subtotal - discountAmount;
 
   // Submit perubahan (PUT /order/:id)
   const handleSave = async () => {
+    const newItems = Object.entries(quantities)
+      .filter(([_, qty]) => qty > 0)
+      .map(([serviceId, qty]) => ({
+        serviceId: Number(serviceId),
+        quantity: qty,
+      }));
     if (!vehiclePlate.trim()) {
       Alert.alert('Peringatan', 'Plat nomor kendaraan tidak boleh kosong!');
       return;
     }
 
-    if (!isPaid && selectedServices.length === 0) {
+    if (!isPaid && newItems.length === 0) {
       Alert.alert('Peringatan', 'Pilih minimal satu paket layanan cuci!');
       return;
     }
@@ -130,10 +164,7 @@ export default function EditOrderScreen({ route, navigation }: any) {
 
       // Hanya kirim items jika status pesanan belum dibayar
       if (!isPaid) {
-        payload.items = selectedServices.map((serviceId) => ({
-          serviceId,
-          quantity: 1,
-        }));
+        payload.items = newItems;
       }
 
       await api.put(`/order/${id}`, payload, {
@@ -243,67 +274,65 @@ export default function EditOrderScreen({ route, navigation }: any) {
 
         {/* Paket Layanan */}
         <View className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs mb-4">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-base font-bold text-gray-900">Paket Layanan</Text>
-            {isPaid && (
-              <Text className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
-                Terkunci (Lunas)
-              </Text>
-            )}
-          </View>
-
-          {services.map((s) => {
-            const isChecked = selectedServices.includes(s.id);
-            return (
-              <TouchableOpacity
-                key={s.id}
-                onPress={() => toggleService(s.id)}
-                activeOpacity={isPaid ? 1 : 0.8}
-                className={`flex-row justify-between items-center p-3.5 rounded-2xl border mb-2.5 ${
-                  isChecked
-                    ? isPaid
-                      ? 'bg-zinc-800 border-zinc-800'
-                      : 'bg-zinc-900 border-zinc-900'
-                    : 'bg-white border-gray-200'
-                } ${isPaid ? 'opacity-70' : 'opacity-100'}`}
-              >
-                <View className="flex-row items-center gap-3 flex-1 mr-3">
-                  <Ionicons
-                    name={isChecked ? 'checkbox' : 'square-outline'}
-                    size={22}
-                    color={isChecked ? '#ffffff' : '#9ca3af'}
-                  />
-                  <View className="flex-1">
-                    <Text
-                      className={`text-sm font-bold ${
-                        isChecked ? 'text-white' : 'text-gray-900'
-                      }`}
-                    >
-                      {s.name}
-                    </Text>
-                    {s.description && (
-                      <Text
-                        className={`text-xs mt-0.5 ${
-                          isChecked ? 'text-zinc-400' : 'text-gray-500'
+                  <Text className="text-base font-bold text-gray-900 mb-3">Pilih Paket Layanan</Text>
+                  {services.map((s) => {
+                    const qty = quantities[s.id] || 0;
+                    const isSelected = qty > 0;
+                    return (
+                      <View
+                        key={s.id}
+                        className={`p-3.5 rounded-2xl border mb-2.5 bg-white ${
+                          isSelected ? 'border-zinc-900 bg-zinc-50/50' : 'border-gray-200'
                         }`}
                       >
-                        {s.description}
-                      </Text>
-                    )}
-                  </View>
+                        <View className="flex-row justify-between items-center">
+                          <View className="flex-1 mr-3">
+                            <Text className="text-sm font-bold text-gray-900">{s.name}</Text>
+                            <Text className="text-xs text-gray-500 mt-0.5">
+                              Rp {s.price.toLocaleString('id-ID')}
+                            </Text>
+                          </View>
+        
+                          {isSelected ? (
+                            <View className="flex-row items-center bg-zinc-900 rounded-xl px-1.5 py-1">
+                              <TouchableOpacity
+                                onPress={() => handleDecrement(s.id)}
+                                className="w-7 h-7 rounded-lg bg-zinc-800 items-center justify-center"
+                              >
+                                <Ionicons name="remove" size={16} color="#ffffff" />
+                              </TouchableOpacity>
+        
+                              <Text className="text-white font-extrabold text-sm px-3">{qty}</Text>
+        
+                              <TouchableOpacity
+                                onPress={() => handleIncrement(s.id)}
+                                className="w-7 h-7 rounded-lg bg-zinc-800 items-center justify-center"
+                              >
+                                <Ionicons name="add" size={16} color="#ffffff" />
+                              </TouchableOpacity>
+                            </View>
+                          ) : (
+                            <TouchableOpacity
+                              onPress={() => handleIncrement(s.id)}
+                              className="border border-zinc-300 px-3 py-1.5 rounded-xl bg-zinc-50"
+                            >
+                              <Text className="text-xs font-bold text-zinc-800">+ Tambah</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+        
+                        {qty >= 1 && (
+                          <View className="pt-2 mt-2 border-t border-gray-100 flex-row justify-between">
+                            <Text className="text-[11px] text-gray-400">Subtotal Layanan:</Text>
+                            <Text className="text-xs font-bold text-zinc-900">
+                              Rp {(s.price * qty).toLocaleString('id-ID')}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
-
-                <Text
-                  className={`text-sm font-extrabold shrink-0 ${
-                    isChecked ? 'text-white' : 'text-gray-900'
-                  }`}
-                >
-                  Rp {s.price.toLocaleString('id-ID')}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
 
         {/* Ringkasan Biaya */}
         <View className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs mb-4">

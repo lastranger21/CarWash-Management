@@ -1,4 +1,4 @@
-import {View,Text,FlatList,ActivityIndicator,Alert,Image,TouchableOpacity} from 'react-native'
+import {View,Text,FlatList,ActivityIndicator,Alert,Image,TouchableOpacity, TextInput} from 'react-native'
 import { useEffect, useState, useCallback } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { api } from '../config/api'
@@ -54,11 +54,49 @@ export default function CustomerScreen({ navigation }: any) {
         return null;
     }
   };
-    return (
+    const [searchTerm, setSearchTerm] = useState('')
+    const [statusFilter, setStatusFilter] = useState<'ALL' | 'Reguler' | 'Member'>('ALL')
+    const filteredCustomers =customers.filter((customer)=>{
+        const matchesSearch =
+            customer.vehiclePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            customer.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+        if (statusFilter==='Reguler'){
+            return customer.isActive === false;
+        }
+        if (statusFilter==='Member'){
+            return customer.isActive ===true
+        }
+        if (!matchesSearch ) return false
+        return true
+    })
+        return (
         <View className='flex-1 bg-[#F9FAFB] px-4 pt-12'>
             <Text className='text-2xl font-bold text-[#1b1b24] mb-6'>List Customer</Text>
+            {/* Input Search */}
+                    <View className="flex-row items-center bg-white border border-gray-200 rounded-xl px-3 py-2 mt-4 mb-3 shadow-xs">
+                      <Ionicons name="search-outline" size={18} color="#9ca3af" />
+                      <TextInput
+                        placeholder="Cari Customer dan Member."
+                        placeholderTextColor="#9ca3af"
+                        value={searchTerm}
+                        onChangeText={setSearchTerm}
+                        className="flex-1 ml-2 text-sm text-gray-900 py-1"
+                      />
+                      {searchTerm.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchTerm('')}>
+                          <Ionicons name="close-circle" size={18} color="#9ca3af" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+            {isLoading ? (
+                <View className="flex-1 justify-center items-center">
+                    <ActivityIndicator size="large" color="#18181b" />
+                </View>
+            ):(
+
             <FlatList
-            data = {customers}
+            data = {filteredCustomers}
             keyExtractor={(cust)=> cust.id.toString()}
             showsVerticalScrollIndicator={false}
             contentContainerStyle ={{paddingBottom:100}}
@@ -117,9 +155,11 @@ export default function CustomerScreen({ navigation }: any) {
                 </Text>
                 </View>
             </TouchableOpacity>
-  );
-}}
-            />
+            
+        );
+      }}
+                  />
+            )}
             <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => navigation.navigate('NewCustomer')}

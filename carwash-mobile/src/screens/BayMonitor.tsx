@@ -131,7 +131,7 @@ export default function(){
       </View>
     </View>
     {/* Daftar mobil antrean */}
-    {queuedOrders.map((order) => (
+    {queuedOrders.toReversed().map((order) => (
       <View
         key={order.id}
         className="flex-row justify-between items-center bg-white p-3 rounded-xl border border-amber-100 mb-2"

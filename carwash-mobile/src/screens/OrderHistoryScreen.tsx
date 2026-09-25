@@ -238,7 +238,7 @@ export default function OrderHistoryScreen({ navigation }: any) {
                           isPaid ? 'text-emerald-700' : 'text-rose-700'
                         }`}
                       >
-                        {isPaid ? 'LUNAS' : 'BELUM'}
+                        {isPaid ? 'LUNAS' : 'UNPAID'}
                       </Text>
                     </View>
                   </View>

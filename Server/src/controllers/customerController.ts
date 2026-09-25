@@ -109,31 +109,43 @@ export const getCustomerById = async(req:Request,res:Response,next:NextFunction)
         next(error)
     }
 }
-export const updateCustomer= async (req:Request,res:Response,next:NextFunction) => {
-    try {
-        const {id} = req.params
-        const {name, phone} = req.body
+export const updateCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, newVehicle } = req.body;
+    const updatedCustomer = await prisma.customer.update({
+      where: {
+        id: Number(id),
+      },
+      data: {
+        ...(name ? { name: name.trim() } : {}),
+        ...(phone ? { phone: phone.trim() } : {}),
         
-        
-        const updatedCustomer = await prisma.customer.update({
-            where: {
-                id:Number(id)
-            },
-            data: {
-                name:name,
-                phone:phone,
-                
-                
+        ...(newVehicle && newVehicle.plateNumber
+          ? {
+              vehicles: {
+                create: {
+                  plateNumber: newVehicle.plateNumber.toUpperCase().trim(),
+                  modelName: newVehicle.modelName?.trim() || 'Mobil Standar',
+                },
+              },
             }
-        })
-        return res.status(200).json({
-            message: "customer updated successfully",
-            data: updatedCustomer
-        })
-    } catch (error) {
-        next(error)
-    }
-}
+          : {}),
+      },
+      include: {
+        vehicles: true,
+        membership: true,
+        orders: true,
+      },
+    });
+    return res.status(200).json({
+      message: 'Customer updated successfully',
+      data: updatedCustomer,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 export const toggleMembership = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params; 
@@ -147,7 +159,7 @@ export const toggleMembership = async (req: Request, res: Response, next: NextFu
         message: 'Customer tidak ditemukan',
       });
     }
-    // 2. Skenario A: Customer belum memiliki membership sama sekali -> Buat baru
+    //  Skenario A: Customer belum memiliki membership sama sekali -> Buat baru
     if (!customer.membership) {
       // Generate Kode Member Unik (contoh: MBR-BUD-1234)
       const sanitizedName = customer.name.slice(0, 3).toUpperCase();
@@ -166,7 +178,7 @@ export const toggleMembership = async (req: Request, res: Response, next: NextFu
         data: newMembership,
       });
     }
-    // 3. Skenario B: Customer sudah punya membership -> Toggle status isActive
+    //  Skenario B: Customer sudah punya membership -> Toggle status isActive
     const updatedMembership = await prisma.membership.update({
       where: { customerId: customer.id },
       data: {

@@ -1,7 +1,9 @@
-import { DollarSign, Car, Timer, Award, ArrowUpRight, TrendingUp } from 'lucide-react'
+import { DollarSign, Car, Timer, Award, ArrowUpRight, TrendingUp,CreditCard } from 'lucide-react'
 import { Card, CardContent } from '../ui/card'
 import { type OrderRecord } from '../../types/carwash'
 import { useOrder } from '@/hooks/useOrder'
+
+import { useAuth } from '@/hooks/useAuth'
 
 interface StatCardsProps {
   orders: OrderRecord[]
@@ -23,16 +25,29 @@ export function StatCards({ orders }: StatCardsProps) {
     ['QUEUED', 'WASHING', 'DRYING'].includes(o.status)
   ).length
   const memberTransactions = orders.filter((o) => o.isMember).length
-  const {carCountToday} = useOrder()
+  const {carCountToday,unpaidCount} = useOrder()
+  const { user } = useAuth()
+  const unpaidTotalAmount = orders
+    .filter((o) => o.paymentStatus === 'UNPAID')
+    .reduce((acc, curr) => acc + curr.total, 0)
   const stats = [
-    {
-      title: 'Omzet Hari Ini',
-      value: `Rp ${totalRevenue.toLocaleString('id-ID')}`,
-      change: 'penghasilan cuci mobil hari ini',
-      trend: 'neutral',
-      icon: DollarSign,
-      iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-    },
+    user?.role === 'ADMIN'
+      ? {
+          title: 'Omzet Hari Ini',
+          value: `Rp ${totalRevenue.toLocaleString('id-ID')}`,
+          change: 'penghasilan cuci mobil hari ini',
+          trend: 'neutral',
+          icon: DollarSign,
+          iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        }
+      : {
+          title: 'Order Belum Dibayar',
+          value: `${unpaidCount} Transaksi`,
+          change: `Total tagihan: Rp ${unpaidTotalAmount.toLocaleString('id-ID')}`,
+          trend: 'warning',
+          icon: CreditCard,
+          iconBg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+        },
     {
       title: 'Mobil Selesai Dicuci',
       value: `${carCountToday} Kendaraan`,

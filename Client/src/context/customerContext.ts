@@ -6,7 +6,14 @@ export interface CustomerContextType {
   isLoading: boolean
   addCustomer: (payload: CreateCustomerPayload) => Promise<boolean>
   toggleMembership: (customerId: number) => Promise<boolean>
-  updateCustomer: (id: number, data: { name: string; phone: string }) => Promise<boolean>
+  updateCustomer: (
+    id: number,
+    data: {
+      name: string
+      phone: string
+      newVehicle?: { plateNumber: string; modelName?: string }
+    }
+  ) => Promise<boolean>
   refreshCustomers: () => Promise<void>
 }
 

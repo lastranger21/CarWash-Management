@@ -1,0 +1,6 @@
+search bar customer(v)
+
+antrian di atas di sort berdasarkan queue(v)
+edit menu pesanan quantity ditambahkan(v)
+mobilnya disable kalo masih dicuci(v)
+belum bayar diganti unpaid  (v)

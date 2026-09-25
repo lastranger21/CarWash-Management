@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { X, Car, Sparkles, PackageCheck, CreditCard, Banknote, QrCode,Plus,Minus,ShoppingBag}from 'lucide-react'
+import { useState,useRef,useEffect} from 'react'
+import { X, Car, Sparkles, PackageCheck, CreditCard, Banknote, QrCode,Plus,Minus,ShoppingBag,Search,        
+  ChevronDown,User,Phone,}from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -13,6 +14,141 @@ interface NewOrderModalProps {
   onClose: () => void
   services: ServiceItem[]
   
+}
+interface SearchableDropdownProps {
+  label: string
+  placeholder: string
+  value: string
+  onChange: (val: string) => void
+  options: Array<{
+    id: string | number
+    primary: string
+    secondary?: string
+    badge?: string
+    data: any
+  }>
+  onSelect: (data: any) => void
+  icon?: React.ComponentType<{ className?: string }>
+  required?: boolean
+  searchPlaceholder?: string
+}
+function SearchableDropdown({
+  label,
+  placeholder,
+  value,
+  onChange,
+  options,
+  onSelect,
+  icon: Icon,
+  required = false,
+  searchPlaceholder = 'Ketik untuk mencari...',
+}: SearchableDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  // Menutup dropdown otomatis jika klik di luar area
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+  // Filter daftar berdasarkan teks yang diketik di searchbar
+  const filteredOptions = options.filter(
+    (opt) =>
+      opt.primary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (opt.secondary && opt.secondary.toLowerCase().includes(searchTerm.toLowerCase()))
+  )
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className="font-semibold block mb-1">
+        {label} {required && <span className="text-destructive">*</span>}
+      </label>
+      {/* Input Utama dengan Tombol Dropdown */}
+      <div className="relative flex items-center">
+        {Icon && (
+          <Icon className="absolute left-3 size-3.5 text-muted-foreground pointer-events-none" />
+        )}
+        <Input
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+          className={`${Icon ? 'pl-8' : ''} pr-8`}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setIsOpen((prev) => !prev)
+            setSearchTerm('')
+          }}
+          className="absolute right-2 p-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        >
+          <ChevronDown
+            className={`size-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+      </div>
+      {/* Menu Popup Dropdown */}
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover p-2 text-popover-foreground shadow-2xl animate-in fade-in-0 zoom-in-95">
+          {/* Search Bar di dalam Dropdown */}
+          <div className="relative mb-2 flex items-center">
+            <Search className="absolute left-2.5 size-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              autoFocus
+              placeholder={searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+            />
+            
+          </div>
+          {/* List Hasil Pencarian */}
+          <div className="max-h-44 overflow-y-auto space-y-1">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt) => (
+                <div
+                  key={opt.id}
+                  onClick={() => {
+                    onSelect(opt.data)
+                    setIsOpen(false)
+                    setSearchTerm('')
+                  }}
+                  className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs hover:bg-muted cursor-pointer transition-colors"
+                >
+                  <div className="truncate pr-2">
+                    <p className="font-semibold text-foreground truncate">{opt.primary}</p>
+                    {opt.secondary && (
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {opt.secondary}
+                      </p>
+                    )}
+                  </div>
+                  {opt.badge && (
+                    <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                      {opt.badge}
+                    </span>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="p-3 text-center text-xs text-muted-foreground">
+                <p>Data tidak ditemukan.</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Kamu bisa langsung mengetik untuk data baru.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function NewOrderModal({
@@ -98,6 +234,38 @@ const total = subtotal - discountAmount
       (customerName.trim() && c.name.toLowerCase().trim() === customerName.toLowerCase().trim())
   )
   const registeredVehicles = matchedCustomer?.vehicles || []
+  const plateOptions = customers.flatMap((c) => {
+    const list = c.vehicles && c.vehicles.length > 0
+      ? c.vehicles
+      : c.frequentPlate
+      ? [{ id: `freq-${c.id}`, plateNumber: c.frequentPlate, modelName: 'Mobil Standar' }]
+      : []
+    return list.map((v) => ({
+      id: `plate-${c.id}-${v.plateNumber}`,
+      primary: v.plateNumber,
+      secondary: `${v.modelName || 'Mobil'} • ${c.name} (${c.phone})`,
+      badge: c.membership?.isActive ? 'MEMBER' : undefined,
+      data: { vehicle: v, customer: c },
+    }))
+  })
+  // Data opsi untuk Dropdown Nama Pelanggan
+  const customerOptions = customers.map((c) => ({
+    id: `cust-${c.id}`,
+    primary: c.name,
+    secondary: `${c.phone} • ${c.vehicles?.[0]?.plateNumber || c.frequentPlate || 'Belum ada mobil'}`,
+    badge: c.membership?.isActive ? 'MEMBER' : undefined,
+    data: c,
+  }))
+  //Data opsi untuk Dropdown Nomor HP
+  const phoneOptions = customers
+    .filter((c) => c.phone && c.phone !== '-')
+    .map((c) => ({
+      id: `phone-${c.id}`,
+      primary: c.phone,
+      secondary: `${c.name} • ${c.vehicles?.[0]?.plateNumber || c.frequentPlate || ''}`,
+      badge: c.membership?.isActive ? 'MEMBER' : undefined,
+      data: c,
+    }))
   const handleSubmit = async (e: React.FormEvent) => {
      e.preventDefault()
     if (!vehiclePlate.trim() || !customerName.trim()) {
@@ -232,58 +400,114 @@ const total = subtotal - discountAmount
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <CardContent className="min-h-0 flex-1 overflow-y-auto space-y-4 py-4 text-xs">
               {/* Row 1: Kendaraan */}
-<div>
-    <Label className="text-xs font-medium">Nomor Plat Kendaraan</Label>
-    <Input
-      placeholder="B 1234 ABC"
-      value={vehiclePlate}
-      onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
-      required
-    />
-    
-    {registeredVehicles.length > 0 && (
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] text-muted-foreground">Pilih mobil terdaftar:</span>
-        {registeredVehicles.map((v) => (
-          <button
-            key={v.id}
-            type="button"
-            onClick={() => {
-              setVehiclePlate(v.plateNumber)
-              setVehicleModel(v.modelName)
-            }}
-            className="flex items-center gap-1 rounded border border-border bg-muted/60 px-2 py-0.5 text-xs hover:border-primary hover:bg-primary/10 transition-colors"
-          >
-            <Car className="size-3 text-primary" />
-            <span className="font-bold">{v.plateNumber}</span>
-            <span className="text-[10px] text-muted-foreground">({v.modelName})</span>
-          </button>
-        ))}
-      </div>
-    )}
-  </div>
-
-              {/* Row 2: Customer & Membership */}
+              <div>
+                
+                <SearchableDropdown
+                  label="Nama Pelanggan"
+                  placeholder="Nama pemilik kendaraan"
+                  value={customerName}
+                  onChange={(val) => setCustomerName(val)}
+                  icon={User}
+                  required
+                  searchPlaceholder="Cari nama pelanggan..."
+                  options={customerOptions}
+                  onSelect={(c) => {
+                    setCustomerName(c.name)
+                    setCustomerPhone(c.phone)
+                    if (c.membership?.isActive) {
+                      setIsMember(true)
+                      setDiscountPercent(c.membership.discountPercent)
+                    } else {
+                      setIsMember(false)
+                      setDiscountPercent(0)
+                    }
+                    // Auto-fill mobil pertama pelanggan jika ada
+                    const firstVeh = c.vehicles?.[0]
+                    if (firstVeh) {
+                      setVehiclePlate(firstVeh.plateNumber)
+                      setVehicleModel(firstVeh.modelName || 'Mobil Standar')
+                    } else if (c.frequentPlate) {
+                      setVehiclePlate(c.frequentPlate)
+                      setVehicleModel('Mobil Standar')
+                    }
+                  }}
+                />
+                
+              </div>
+              {/* Row 2: Nama Pelanggan & No. HP dengan Searchable Dropdown */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="font-semibold block mb-1">
-                    Nama Pelanggan <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    placeholder="Nama pemilik mobil"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold block mb-1">No. WhatsApp / HP</label>
-                  <Input
-                    placeholder="0812xxxxxxxx"
-                    value={customerPhone}
-                    onChange={(e) => handlePhoneChange(e.target.value)}
-                  />
-                </div>
+                <SearchableDropdown
+                  label="Nomor Plat Kendaraan"
+                  placeholder="Contoh: B 1234 ABC"
+                  value={vehiclePlate}
+                  onChange={(val) => setVehiclePlate(val.toUpperCase())}
+                  icon={Car}
+                  required
+                  searchPlaceholder="Cari plat nomor atau pemilik..."
+                  options={plateOptions}
+                  onSelect={({ vehicle, customer }) => {
+                    setVehiclePlate(vehicle.plateNumber)
+                    setVehicleModel(vehicle.modelName || 'Mobil Standar')
+                    setCustomerName(customer.name)
+                    setCustomerPhone(customer.phone)
+                    if (customer.membership?.isActive) {
+                      setIsMember(true)
+                      setDiscountPercent(customer.membership.discountPercent)
+                    } else {
+                      setIsMember(false)
+                      setDiscountPercent(0)
+                    }
+                  }}
+                />
+                {/* Tombol pintas ganti mobil jika pelanggan punya > 1 mobil */}
+                {registeredVehicles.length > 1 && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">Mobil lain milik pelanggan ini:</span>
+                    {registeredVehicles.map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => {
+                          setVehiclePlate(v.plateNumber)
+                          setVehicleModel(v.modelName)
+                        }}
+                        className="flex items-center gap-1 rounded border border-border bg-muted/60 px-2 py-0.5 text-xs hover:border-primary hover:bg-primary/10 transition-colors"
+                      >
+                        <Car className="size-3 text-primary" />
+                        <span className="font-bold">{v.plateNumber}</span>
+                        <span className="text-[10px] text-muted-foreground">({v.modelName})</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <SearchableDropdown
+                  label="No. WhatsApp / HP"
+                  placeholder="0812xxxxxxxx"
+                  value={customerPhone}
+                  onChange={(val) => handlePhoneChange(val)}
+                  icon={Phone}
+                  searchPlaceholder="Cari nomor HP..."
+                  options={phoneOptions}
+                  onSelect={(c) => {
+                    setCustomerPhone(c.phone)
+                    setCustomerName(c.name)
+                    if (c.membership?.isActive) {
+                      setIsMember(true)
+                      setDiscountPercent(c.membership.discountPercent)
+                    } else {
+                      setIsMember(false)
+                      setDiscountPercent(0)
+                    }
+                    const firstVeh = c.vehicles?.[0]
+                    if (firstVeh) {
+                      setVehiclePlate(firstVeh.plateNumber)
+                      setVehicleModel(firstVeh.modelName || 'Mobil Standar')
+                    } else if (c.frequentPlate) {
+                      setVehiclePlate(c.frequentPlate)
+                      setVehicleModel('Mobil Standar')
+                    }
+                  }}
+                />
               </div>
 
               {/* Membership Toggle */}
