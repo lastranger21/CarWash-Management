@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../lib/prisma';
+import { OrderStatus, PayStatus } from '@prisma/client';
 
+const snap = require('../services/midtransService');
 export const createPayment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { orderId, amount, method } = req.body;
@@ -132,3 +134,84 @@ export const getAllPayments = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+export const createTransaction = async(req:Request, res:Response) => {
+  try {
+    const { orderId, amount, customerName, customerEmail } = req.body;
+    const parameter = {
+      transaction_details: {
+        order_id: orderId,
+        gross_amount: amount,
+      },
+      customer_details: {
+        first_name: customerName,
+        email: customerEmail,
+      },
+      
+      // enabled_payments: ['gopay', 'bca_va', 'bni_va', 'bri_va', 'qris', 'shopeepay']
+    };
+    // Buat snap token dan redirect url
+    const transaction = await snap.createTransaction(parameter);
+    // Simpan token & redirect_url ke database
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        snapToken: transaction.token,
+        snapRedirectUrl: transaction.redirect_url,
+      },
+    });
+    return res.json({
+      success: true,
+      token: transaction.token,
+      redirect_url: transaction.redirect_url,
+    });
+  } catch (error:any) {
+    return res.status(500).json({ message: error.message });
+  }
+}
+const crypto = require('crypto');
+export const handleMidtransWebhook=async(req:Request, res:Response) => {
+  try {
+    const notificationJson = req.body;
+    
+    const { order_id, status_code, gross_amount, signature_key, transaction_status, payment_type,fraud_status  } = notificationJson;
+    const serverKey = process.env.MIDTRANS_SERVER_KEY;
+    
+    const hash = crypto.createHash('sha512')
+      .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
+      .digest('hex');
+    if (hash !== signature_key) {
+      return res.status(403).json({ message: 'Invalid signature key' });
+    }
+
+    let paymentStatus = 'UNPAID';
+    let orderStatus = 'PENDING';
+    if (transaction_status === 'capture' || transaction_status === 'settlement') {
+      paymentStatus = 'SETTLEMENT';
+      orderStatus = 'PAID';
+    } else if (['deny', 'cancel', 'expire'].includes(transaction_status)) {
+      paymentStatus = transaction_status.toUpperCase();
+      orderStatus = 'CANCELLED';
+    }
+    // Update ke Database via Prisma
+    const updatedOrder = await prisma.order.update({
+      where: { id: order_id },
+      data: {
+        paymentStatus: paymentStatus as PayStatus,
+        status: orderStatus as OrderStatus,
+        paymentType: payment_type,
+      },
+    });
+    //  Ambil instance Socket.IO dan pancarkan event ke room order yang bersangkutan
+    const io = req.app.get('io');
+    io.to(`order_${order_id}`).emit('payment_status_updated', {
+      orderId: order_id,
+      paymentStatus: updatedOrder.paymentStatus,
+      status: updatedOrder.status,
+      paymentType: updatedOrder.paymentType,
+    });
+    return res.status(200).json({ message: 'OK' });
+  } catch (error:any) {
+    return res.status(500).json({ message: error.message });
+  }
+}

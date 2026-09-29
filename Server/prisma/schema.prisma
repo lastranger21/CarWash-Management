@@ -22,7 +22,8 @@ model User {
 
  orders              Order[]
  paymentsReceived    Payment[]            
- statusChanges       OrderStatusHistory[] 
+ statusChanges       OrderStatusHistory[]
+ customer Customer? 
 }
 
 model Customer {
@@ -30,6 +31,8 @@ model Customer {
   name          String
   phone         String    @db.VarChar(16) @unique
   createdAt     DateTime  @default(now())
+  userId  Int? @unique
+  user User? @relation(fields: [userId],references: [id])
   membership Membership?
   orders     Order[]
   vehicles      Vehicle[]
@@ -82,6 +85,9 @@ model Order {
   createdAt     DateTime             @default(now())
   bayId         Int?         
   vehicleId     Int?         
+  snapToken       String?
+  snapRedirectUrl String?
+  paymentType     String? 
   bay           Bay?         @relation(fields: [bayId], references: [id])
   customer      Customer             @relation(fields: [customerId], references: [id])
   createdByUser User                 @relation(fields: [createdById], references: [id])
@@ -139,6 +145,7 @@ model Bay {
 enum Role {
   ADMIN
   STAFF
+  CUSTOMER
 }
 enum OrderStatus {
   RECEIVED
@@ -152,5 +159,8 @@ enum OrderStatus {
 
 enum PayStatus {
   UNPAID
+  SETTLEMENT
+  EXPIRE
+  FAILED
   PAID
 }

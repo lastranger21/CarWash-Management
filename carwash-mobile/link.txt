@@ -1,0 +1,6 @@
+https://github.com/lastranger21/CarWash-Management
+branch mobile-app
+
+
+harga_diskon = total * 10%
+
