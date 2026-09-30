@@ -18,7 +18,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000', 
+    origin: '*', 
     methods: ['GET', 'POST'],
   },
 });
@@ -39,6 +39,6 @@ io.on('connection', (socket:any) => {
 
 
 const port =3000
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });

@@ -14,7 +14,11 @@ import { Car } from "lucide-react"
 import { useAuth } from '@/hooks/useAuth'
 
 
-export function  Login() {
+interface LoginProps {
+  onSwitchToCustomer?: () => void
+}
+
+export function Login({ onSwitchToCustomer }: LoginProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const {login} = useAuth()
@@ -64,12 +68,7 @@ export function  Login() {
           <div className="grid gap-2 text-left">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              {/*<a
-                href="#"
-                className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
-              >
-                Lupa password?
-              </a>*/}
+              
             </div>
             <Input
               id="password"
@@ -84,10 +83,25 @@ export function  Login() {
           
         </CardContent>
 
-        <CardFooter className="flex-col gap-2 pt-2">
+        <CardFooter className="flex-col gap-3 pt-2">
           <Button type="submit" className="w-full font-semibold">
             Masuk ke Dashboard
           </Button>
+
+          {onSwitchToCustomer && (
+            <div className="border-t border-border/60 pt-3 text-center w-full">
+              <p className="text-xs text-muted-foreground">
+                Pelanggan car wash?{' '}
+                <button
+                  type="button"
+                  onClick={onSwitchToCustomer}
+                  className="font-bold text-primary hover:underline"
+                >
+                  Masuk / Daftar di sini
+                </button>
+              </p>
+            </div>
+          )}
         </CardFooter>
       </form>
     </Card>

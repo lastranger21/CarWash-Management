@@ -1,10 +1,10 @@
 import React, { useState,useEffect} from 'react'
 import { ServiceContext } from './serviceContext'
-import { INITIAL_SERVICES } from '@/data/mockData'
+
 import type { ServiceItem } from '@/types/carwash'
 import { api } from '@/api'
 export function ServiceProvider({ children }: { children: React.ReactNode }) {
-  const [services, setServices] = useState<ServiceItem[]>(INITIAL_SERVICES)
+  const [services, setServices] = useState<ServiceItem[]>([])
   useEffect(() => {
     const fetchServices = async () => {
       try {

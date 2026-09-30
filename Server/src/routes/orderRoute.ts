@@ -6,7 +6,8 @@ import {
   getOrderById,
   updateOrderStatus,
   deleteOrder,
-  updateOrder
+  updateOrder,
+  getMyActiveOrder
 } from '../controllers/orderController';
 import { authentication } from '../middlewares/authMiddleware';
 import { authorizeRole } from '../middlewares/authorizeRole';
@@ -36,6 +37,11 @@ router.get(
   getAllOrders
 );
 
+router.get(
+  '/my-active',
+  authorizeRole(['CUSTOMER', 'ADMIN', 'STAFF']),
+  getMyActiveOrder
+);
 
 router.get(
   '/:id',
@@ -62,5 +68,7 @@ router.delete(
   authorizeRole(['ADMIN']),
   deleteOrder
 );
+
+
 
 export default router;

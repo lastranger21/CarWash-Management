@@ -9,32 +9,45 @@ import { CustomerPage } from './components/dashboard/Customer'
 import { ServicesPage } from './components/dashboard/Service'
 import { OrderHistoryPage } from './components/dashboard/HistoryOrder'
 import { Login } from './components/auth/Login'
+import { LoginCustomer } from './components/auth/LoginCustomer'
+import { CustomerPortal } from './components/customer/CustomerPortal'
 import { Register } from './components/auth/Register'
 import { OrderProvider } from './context/orderProvider'
 import { useOrder } from './hooks/useOrder'
 import { useAuth } from './hooks/useAuth'
 import { useService } from './hooks/useService'
 import { CustomerProvider } from './context/customerProvider'
+
 function App() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, user } = useAuth()
+  const [authMode, setAuthMode] = useState<'customer' | 'staff'>('customer')
   
- if (isLoading) {
+  if (isLoading) {
     return <div className="flex min-h-screen items-center justify-center">Memuat...</div>
   }
- if (!isAuthenticated) {
+
+  if (!isAuthenticated) {
+    if (authMode === 'customer') {
+      return <LoginCustomer onSwitchToStaff={() => setAuthMode('staff')} />
+    }
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
-        
-          <Login  />
-        
+        <Login onSwitchToCustomer={() => setAuthMode('customer')} />
       </div>
     )
   }
+
+  // arahkan ke page sesuai dengan role user
+  if (user?.role === 'CUSTOMER') {
+    return <CustomerPortal />
+  }
+
+ 
   return (
-   <CustomerProvider>
-    <OrderProvider>
-      <Dashboard />
-    </OrderProvider>
+    <CustomerProvider>
+      <OrderProvider>
+        <Dashboard />
+      </OrderProvider>
     </CustomerProvider>
   )
 }
@@ -97,7 +110,7 @@ function Dashboard() {
   )}
 
             
-          {/* TAMPILAN HALAMAN PELANGGAN & MEMBER */}
+          {/* Halaman customer dan member */}
   {activeTab === 'customers' && (
     <CustomerPage />
   )}

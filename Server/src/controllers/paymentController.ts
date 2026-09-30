@@ -138,6 +138,32 @@ export const getAllPayments = async (req: Request, res: Response, next: NextFunc
 export const createTransaction = async(req:Request, res:Response) => {
   try {
     const { orderId, amount, customerName, customerEmail } = req.body;
+
+    if (!orderId || !amount) {
+      return res.status(400).json({ message: 'orderId dan amount wajib diisi' });
+    }
+
+     const order = await prisma.order.findUnique({
+      where: { id: Number(orderId) },
+    });
+
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order tidak ditemukan' });
+    }
+    // reuse token
+    if (order.snapToken && order.paymentStatus === 'UNPAID') {
+      return res.json({
+        success: true,
+        token: order.snapToken,
+        redirect_url: order.snapRedirectUrl,
+      });
+    }
+    
+    
+    const midtransOrderId = `${order.id}-${Date.now()}`;
+
+
     const parameter = {
       transaction_details: {
         order_id: orderId,
@@ -177,6 +203,7 @@ export const handleMidtransWebhook=async(req:Request, res:Response) => {
     const { order_id, status_code, gross_amount, signature_key, transaction_status, payment_type,fraud_status  } = notificationJson;
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
     
+    const realOrderId = Number(String(order_id).split('-')[0]);
     const hash = crypto.createHash('sha512')
       .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
       .digest('hex');
@@ -195,7 +222,7 @@ export const handleMidtransWebhook=async(req:Request, res:Response) => {
     }
     // Update ke Database via Prisma
     const updatedOrder = await prisma.order.update({
-      where: { id: order_id },
+      where: { id: realOrderId },
       data: {
         paymentStatus: paymentStatus as PayStatus,
         status: orderStatus as OrderStatus,

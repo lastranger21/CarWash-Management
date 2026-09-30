@@ -169,6 +169,16 @@ if (!id || isNaN(Number(id)) || Number(id) > 2147483647) {
       return updatedOrder;
     });
 
+    const io = req.app.get('io');
+      if (io) {
+        // Kirim pembaruan status pengerjaan ke room order yang bersangkutan
+        io.to(`order_${id}`).emit('order_status_updated', {
+          orderId: Number(id),
+          status: nextStatus,
+          bayId: updated.bayId,
+        });
+      }
+
     return res.status(200).json({
       message: `Status order berhasil diperbarui menjadi ${nextStatus}`,
       data: updated
@@ -414,3 +424,45 @@ export const updateOrder = async (req:Request,res:Response,next:NextFunction) =>
     next(error)
   }
 }
+export const getMyActiveOrder = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user.id; 
+    // Cari order yang customer-nya memiliki userId ini dan belum dibayar
+    const activeOrder = await prisma.order.findFirst({
+      where: {
+        customer: {
+          userId: Number(userId),
+        },
+        paymentStatus: 'UNPAID',
+        status: {
+          notIn: ['CANCELLED', 'COMPLETED'],
+        },
+      },
+      include: {
+        orderItems: {
+          include: {
+            service: true, // Ambil rincian nama layanan & harga
+          },
+        },
+        customer: true,
+        vehicle: true,
+        bay: true,
+      },
+      orderBy: {
+        createdAt: 'desc', // Ambil order terbaru
+      },
+    });
+    if (!activeOrder) {
+      return res.status(200).json({
+        message: 'Tidak ada order aktif yang belum dibayar',
+        data: null,
+      });
+    }
+    return res.status(200).json({
+      message: 'Order aktif berhasil diambil',
+      data: activeOrder,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

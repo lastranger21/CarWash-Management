@@ -1,6 +1,6 @@
-import { useState,useEffect } from "react"
+import { useState, useEffect } from "react"
 import { type AuthUser } from "@/types/user"
-import {AuthContext,STORAGE_KEY} from "./authContext"
+import { AuthContext, STORAGE_KEY, type CustomerRegisterPayload } from "./authContext"
 import { api } from "@/api"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -14,7 +14,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (savedUser) {
         setUser(JSON.parse(savedUser))
       }
-       if (token) {
+      if (token) {
         // Decode payload JWT secara mandiri tanpa library luar
         const base64Url = token.split('.')[1]
         if (base64Url) {
@@ -45,35 +45,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
   // Fungsi Login
   const login = async (email: string, password?: string): Promise<boolean> => {
-  try {
-    const res = await api.post('/api/auth/login', { email, password })
-    if (res.data.token) {
-      localStorage.setItem('token', res.data.token)
+    try {
+      const res = await api.post('/api/auth/login', { email, password })
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token)
+      }
+      const userData: AuthUser = res.data.user || {
+        id: Date.now(),
+        name: email.toLowerCase().includes('admin') ? 'Admin Kasir' : 'Staf Kasir',
+        email: email.trim(),
+        role: 'ADMIN',
+      }
+      setUser(userData)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
+      return true
+    } catch (error) {
+      console.error('Login gagal:', error)
+      return false
     }
-    const userData = res.data.user || {
-      id: Date.now(),
-      name: email.toLowerCase().includes('admin') ? 'Admin Kasir' : 'Staf Kasir',
-      email: email.trim(),
-      role: 'ADMIN',
-    }
-    setUser(userData)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
-    return true
-  } catch (error) {
-    console.error('Login gagal:', error)
-    return false
   }
-}
-  // Fungsi Register
+  // Fungsi Register (Admin daftarkan Staff)
   const register = async (name: string, email: string, password?: string): Promise<boolean> => {
-  try {
-    await api.post('/api/auth/register', { name, email, password, role: 'STAFF' })
-    return true
-  } catch (error) {
-    console.error('Register gagal:', error)
-    return false
+    try {
+      await api.post('/api/auth/register', { name, email, password, role: 'STAFF' })
+      return true
+    } catch (error) {
+      console.error('Register gagal:', error)
+      return false
+    }
   }
-}
+  // Fungsi Register Customer
+  const registerCustomer = async (payload: CustomerRegisterPayload): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const res = await api.post('/api/auth/customer/register', payload)
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token)
+      }
+      if (res.data.user) {
+        setUser(res.data.user)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(res.data.user))
+      }
+      return { success: true }
+    } catch (error: any) {
+      console.error('Register customer gagal:', error)
+      const message = error.response?.data?.message || 'Registrasi gagal. Silakan coba lagi.'
+      return { success: false, message }
+    }
+  }
   // Fungsi Logout
   const logout = () => {
     setUser(null)
@@ -88,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         register,
+        registerCustomer,
         logout,
       }}
     >
