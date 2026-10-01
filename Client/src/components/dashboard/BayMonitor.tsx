@@ -21,7 +21,7 @@ export function BayMonitor() {
   // Ambil daftar bilik dari backend
   const fetchBays = async () => {
     try {
-      const res = await api.get('/api/bays')
+      const res = await api.get('/api/bay')
       if (res.data?.data) {
         setBays(res.data.data)
       }

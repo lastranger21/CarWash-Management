@@ -99,25 +99,38 @@ export default function CheckoutPage() {
 
       const { token } = response.data;
 
-      if ((window as any).snap) {
-        (window as any).snap.pay(token, {
-          onSuccess: (result: any) => {
-            console.log('Pembayaran selesai via popup:', result);
-          },
-          onPending: (result: any) => {
-            console.log('Menunggu pembayaran:', result);
-          },
-          onError: (err: any) => {
-            console.error('Pembayaran gagal:', err);
-            alert('Pembayaran gagal, silakan coba kembali.');
-          },
-          onClose: () => {
-            console.log('Popup ditutup');
-          },
-        });
-      } else {
-        alert('Midtrans Snap SDK belum dimuat.');
-      }
+      const closeSnapPopup = () => {
+  const snapIframe = document.getElementById('snap-midtrans');
+  if (snapIframe) snapIframe.remove();
+  const snapContainer = document.querySelector('.snap-container');
+  if (snapContainer) snapContainer.remove();
+};
+if ((window as any).snap) {
+  (window as any).snap.pay(token, {
+    onSuccess: async (result: any) => {
+      console.log('Pembayaran selesai via popup:', result);
+      
+      // 1. Tutup popup snap dari layar
+      closeSnapPopup();
+      // 2. Ubah status lokal dan fetch ulang pesanan aktif
+      setPaymentStatus('SETTLEMENT');
+      await fetchActiveOrder();
+    },
+    onPending: (result: any) => {
+      console.log('Menunggu pembayaran:', result);
+      closeSnapPopup();
+    },
+    onError: (err: any) => {
+      console.error('Pembayaran gagal:', err);
+      closeSnapPopup();
+      alert('Pembayaran gagal, silakan coba kembali.');
+    },
+    onClose: () => {
+      console.log('Popup ditutup oleh user');
+      closeSnapPopup();
+    },
+  });
+}
     } catch (error: any) {
       console.error('Gagal memproses pembayaran:', error);
       alert(error?.response?.data?.message || 'Gagal memulai transaksi.');

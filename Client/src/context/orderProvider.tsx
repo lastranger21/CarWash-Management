@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from "react"
 import type { OrderRecord, OrderStatus } from "@/types/carwash"
 import { OrderContext } from "./orderContext"
-
+import { socket } from "@/socket"
 import { api } from "@/api"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -47,6 +47,25 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     }
 
     fetchOrders()
+    socket.connect();
+  // Dengarkan notifikasi pembayaran masuk
+  socket.on('admin_payment_received', (data: any) => {
+    console.log('Pembayaran baru diterima oleh sistem:', data);
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === data.orderId
+          ? {
+              ...order,
+              paymentStatus: data.paymentStatus,
+              paymentMethod: data.paymentType,
+            }
+          : order
+      )
+    );
+  });
+  return () => {
+    socket.off('admin_payment_received');
+  };
   }, [])
 
   //  Tambah Order ke Database Backend

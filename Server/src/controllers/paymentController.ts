@@ -211,32 +211,36 @@ export const handleMidtransWebhook=async(req:Request, res:Response) => {
       return res.status(403).json({ message: 'Invalid signature key' });
     }
 
-    let paymentStatus = 'UNPAID';
-    let orderStatus = 'PENDING';
-    if (transaction_status === 'capture' || transaction_status === 'settlement') {
-      paymentStatus = 'SETTLEMENT';
-      orderStatus = 'PAID';
-    } else if (['deny', 'cancel', 'expire'].includes(transaction_status)) {
-      paymentStatus = transaction_status.toUpperCase();
-      orderStatus = 'CANCELLED';
-    }
-    // Update ke Database via Prisma
-    const updatedOrder = await prisma.order.update({
-      where: { id: realOrderId },
-      data: {
-        paymentStatus: paymentStatus as PayStatus,
-        status: orderStatus as OrderStatus,
-        paymentType: payment_type,
-      },
-    });
-    //  Ambil instance Socket.IO dan pancarkan event ke room order yang bersangkutan
-    const io = req.app.get('io');
-    io.to(`order_${order_id}`).emit('payment_status_updated', {
-      orderId: order_id,
-      paymentStatus: updatedOrder.paymentStatus,
-      status: updatedOrder.status,
-      paymentType: updatedOrder.paymentType,
-    });
+    let paymentStatus: 'UNPAID' | 'PAID' | 'SETTLEMENT' | 'EXPIRE' | 'FAILED' = 'UNPAID';
+if (transaction_status === 'capture' || transaction_status === 'settlement') {
+  paymentStatus = 'PAID'; // atau 'SETTLEMENT'
+} else if (['deny', 'cancel', 'expire'].includes(transaction_status)) {
+  paymentStatus = 'FAILED';
+}
+//  Update HANYA paymentStatus dan paymentType ke Database (Aman dari error Prisma)
+const updatedOrder = await prisma.order.update({
+  where: { id: realOrderId },
+  data: {
+    paymentStatus: paymentStatus,
+    paymentType: payment_type,
+  },
+});
+//  Siarkan via Socket.IO ke customer DAN ke admin secara global
+const io = req.app.get('io');
+if (io) {
+  // Kirim ke room customer
+  io.to(`order_${realOrderId}`).emit('payment_status_updated', {
+    orderId: realOrderId,
+    paymentStatus: updatedOrder.paymentStatus,
+    paymentType: updatedOrder.paymentType,
+  });
+  // Siarkan juga secara global agar Dashboard Admin langsung ter-update otomatis
+  io.emit('admin_payment_received', {
+    orderId: realOrderId,
+    paymentStatus: updatedOrder.paymentStatus,
+    paymentType: updatedOrder.paymentType,
+  });
+}
     return res.status(200).json({ message: 'OK' });
   } catch (error:any) {
     return res.status(500).json({ message: error.message });
